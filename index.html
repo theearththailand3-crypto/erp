@@ -1883,7 +1883,9 @@
         navContainer.style.gridTemplateColumns = '';
       }
 
-      if (!allowedTabs.includes(currentTab)) {
+      if (location.hash === '#company3d') {
+        switchTab('company3d');
+      } else if (!allowedTabs.includes(currentTab) && currentTab !== 'company3d') {
         const firstTab = allowedTabs[0];
         const firstBtn = document.querySelector(`#mainNavTabs .nav-tab[data-tab="${firstTab}"]`);
         switchTab(firstTab, firstBtn);
@@ -2095,9 +2097,11 @@
     function switchTab(tab, btn) {
       currentTab = tab;
       document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
+      const targetBtn = btn || document.querySelector(`#mainNavTabs .nav-tab[data-tab="${tab}"]`);
+      if (targetBtn) targetBtn.classList.add('active');
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.getElementById('tab-' + tab).classList.add('active');
+      const sec = document.getElementById('tab-' + tab);
+      if (sec) sec.classList.add('active');
       renderAll();
     }
 
