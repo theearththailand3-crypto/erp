@@ -435,9 +435,22 @@ def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
     orders: list[dict[str, Any]] = []
     incomes: list[dict[str, Any]] = []
 
+    _THAI_MONTH_MAP = {
+        "ม.ค": "01", "ก.พ": "02", "มี.ค": "03", "เม.ย": "04",
+        "พ.ค": "05", "มิ.ย": "06", "ก.ค": "07", "ส.ค": "08",
+        "ก.ย": "09", "ต.ค": "10", "พ.ย": "11", "ธ.ค": "12",
+    }
+
+    def _infer_sheet_month(s_name: str) -> str:
+        for th_m, mm in _THAI_MONTH_MAP.items():
+            if th_m in s_name:
+                return f"2026-{mm}"
+        return ""
+
     try:
         for sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
+            sheet_month = _infer_sheet_month(sheet_name)
             rows_iter = ws.iter_rows(values_only=True)
             try:
                 hdr_row = next(rows_iter)
@@ -465,8 +478,18 @@ def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
 
                 dep_amt = _parse_float(g("dep_amt"))
                 full_amt = _parse_float(g("full_amt"))
-                dep_date = _norm_date(g("dep_date"))
-                full_date = _norm_date(g("full_date"))
+                raw_dep_date = _norm_date(g("dep_date"))
+                raw_full_date = _norm_date(g("full_date"))
+                print_date = _norm_date(g("print_time"))
+
+                dep_date = raw_dep_date
+                full_date = raw_full_date
+                if sheet_month:
+                    q_fallback = (print_date if (print_date and print_date.startswith(sheet_month)) else f"{sheet_month}-01")
+                    if dep_date and not dep_date.startswith(sheet_month):
+                        dep_date = q_fallback
+                    if full_date and not full_date.startswith(sheet_month):
+                        full_date = q_fallback
 
                 if full_date:
                     last_valid_date = full_date
@@ -747,14 +770,14 @@ def _map_sales_to_admin(sales_str: str) -> str:
         return "ปอนด์"
     if any(k in s for k in ("มาย", "มิ้น", "ยีน", "ST")):
         return "มาย"
-    return ""
+    return "จูน" if s else ""
 
 
 def _map_channel_to_page(channel_str: str) -> str:
     ch = str(channel_str or "").strip().lower()
     if not ch:
         return ""
-    if "st" in ch:
+    if "st" in ch or "มาย" in ch:
         return "STprint"
     if "plp" in ch:
         return "PLP"
@@ -770,14 +793,14 @@ def _map_channel_to_page(channel_str: str) -> str:
         return "พิมพ์สวย"
     if "ปริ้นฉลาก" in ch:
         return "ปริ้นฉลาก"
-    return ""
+    return "STprint"
 
 
 def build_admin_board_state(store: dict[str, Any], orders: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     raw = get_cached_admin_sheet()
-    days_map: dict[str, Any] = json.loads(json.dumps(raw.get("days") or {}))
+    days_map: dict[str, Any] = {}
 
-    # 1. Auto-calculate daily Admin & Page stats directly from main sheet (ลงคิวจากแอดมิน💰2026)
+    # 1. Calculate daily Admin & Page stats 100% directly from main queue sheet (ลงคิวจากแอดมิน💰2026)
     auto_days: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
 
     def _ensure_auto_cell(d_s: str, adm_s: str, pg_s: str) -> dict[str, float]:
@@ -789,13 +812,13 @@ def build_admin_board_state(store: dict[str, Any], orders: list[dict[str, Any]] 
         return a_rec.setdefault(pg_s, {"print_amt": 0.0, "print_cust": 0, "dep_amt": 0.0, "dep_cust": 0})
 
     for o in (orders or []):
-        adm = _map_sales_to_admin(str(o.get("sales") or ""))
-        pg = _map_channel_to_page(str(o.get("channel") or ""))
-        if not adm or not pg:
-            continue
-        is_sub = bool(o.get("is_sub_row"))
         f_amt = float(o.get("full_amt") or 0.0)
         d_amt = float(o.get("dep_amt") or 0.0)
+        if f_amt <= 0 and d_amt <= 0:
+            continue
+        adm = _map_sales_to_admin(str(o.get("sales") or "")) or "จูน"
+        pg = _map_channel_to_page(str(o.get("channel") or "")) or "STprint"
+        is_sub = bool(o.get("is_sub_row"))
         f_date = str(o.get("full_date") or o.get("date") or "")[:10]
         d_date = str(o.get("dep_date") or o.get("date") or "")[:10]
 
@@ -810,24 +833,17 @@ def build_admin_board_state(store: dict[str, Any], orders: list[dict[str, Any]] 
             c["dep_amt"] += d_amt
             if not is_sub:
                 c["dep_cust"] += 1
-        elif d_amt == 0 and not is_sub and o.get("order_type_code") == "new_cust" and f_date:
-            # ลูกค้าใหม่ (ออกแบบ Ai) ที่แอดมินเคลียร์ช่องมัดจำออกตอนจ่ายส่วนต่าง มีมัดจำมาตรฐาน 100 บาท
-            c = _ensure_auto_cell(f_date, adm, pg)
-            c["dep_amt"] += 100.0
-            c["dep_cust"] += 1
 
-    # Merge auto-calculated main-sheet values into days_map (so user never has to fill in manually!)
     for d_str, adm_dict in auto_days.items():
         day_rec = days_map.setdefault(d_str, {"date": d_str, "admins": {}})
         for adm, pg_dict in adm_dict.items():
             adm_rec = day_rec["admins"].setdefault(adm, {})
             for p_name, auto_v in pg_dict.items():
-                cur_v = adm_rec.get(p_name) or {"print_amt": 0.0, "print_cust": 0, "dep_amt": 0.0, "dep_cust": 0}
                 adm_rec[p_name] = {
-                    "print_amt": max(float(cur_v.get("print_amt") or 0.0), float(auto_v["print_amt"])),
-                    "print_cust": max(int(cur_v.get("print_cust") or 0), int(auto_v["print_cust"])),
-                    "dep_amt": max(float(cur_v.get("dep_amt") or 0.0), float(auto_v["dep_amt"])),
-                    "dep_cust": max(int(cur_v.get("dep_cust") or 0), int(auto_v["dep_cust"])),
+                    "print_amt": round(float(auto_v["print_amt"]), 2),
+                    "print_cust": int(auto_v["print_cust"]),
+                    "dep_amt": round(float(auto_v["dep_amt"]), 2),
+                    "dep_cust": int(auto_v["dep_cust"]),
                 }
 
     overrides: dict[str, Any] = store.get("admin_daily_overrides") or {}
@@ -1968,7 +1984,21 @@ def _get_github_token() -> str:
         cred = win32cred.CredRead("git:https://github.com", win32cred.CRED_TYPE_GENERIC)
         return cred["CredentialBlob"].decode("utf-16le").strip()
     except Exception:
-        return ""
+        pass
+    try:
+        proc = subprocess.run(
+            ["git", "credential", "fill"],
+            input="protocol=https\nhost=github.com\n\n",
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        for line in (proc.stdout or "").splitlines():
+            if line.startswith("password="):
+                return line.split("=", 1)[1].strip()
+    except Exception:
+        pass
+    return ""
 
 
 def _github_put_file(repo_path: str, content_bytes: bytes, msg: str) -> None:
