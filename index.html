@@ -574,6 +574,7 @@
   <div class="date-bar">
     <div class="nav-tabs" id="mainNavTabs">
       <button class="nav-tab active" data-tab="overview" onclick="switchTab('overview', this)">📊 ภาพรวมร้าน</button>
+      <button class="nav-tab" data-tab="company3d" onclick="switchTab('company3d', this)" style="background:linear-gradient(135deg,#eef2ff,#f5f3ff);border-color:#a5b4fc;color:#4338ca;font-weight:700;">🏢 อาณาจักร ST Print (3D)</button>
       <button class="nav-tab" data-tab="income" onclick="switchTab('income', this)">1. 💰 รับ (รายรับโอน)</button>
       <button class="nav-tab" data-tab="expense" onclick="switchTab('expense', this)">2. 💸 จ่าย (รายจ่าย/เจ้าหนี้)</button>
       <button class="nav-tab" data-tab="stock" onclick="switchTab('stock', this)">3. 📦 สต๊อก (สติ๊กเกอร์/บรรจุภัณฑ์)</button>
@@ -970,6 +971,79 @@
             <thead id="adminDailyThead"></thead>
             <tbody id="adminDailyTbody"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 6: ST PRINT 3D VIRTUAL COMPANY HQ ================= -->
+    <div id="tab-company3d" class="section">
+      <div id="c3dViewportWrap" style="position:relative;width:100%;height:calc(100vh - 150px);min-height:640px;border-radius:18px;overflow:hidden;border:1px solid #cbd5e1;box-shadow:0 16px 40px rgba(15,23,42,0.12);background:linear-gradient(180deg,#eef5ea 0%,#dce8d5 48%,#cbd9c3 100%);user-select:none;">
+        <canvas id="c3dCanvas" style="width:100%;height:100%;display:block;cursor:grab;"></canvas>
+
+        <!-- Top-Left Company Selector Pill (like reference screenshot) -->
+        <div style="position:absolute;top:16px;left:16px;display:flex;align-items:center;gap:10px;z-index:10;flex-wrap:wrap;">
+          <div style="background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);padding:8px 14px;border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,0.10);border:1px solid rgba(226,232,240,0.9);display:flex;align-items:center;gap:10px;">
+            <span style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">ST</span>
+            <select id="c3dRoomFocusSelect" onchange="focusCompany3DRoom(this.value)" style="border:none;background:transparent;font-weight:700;font-size:14px;color:#0f172a;padding:2px 6px;outline:none;cursor:pointer;">
+              <option value="ALL">บริษัท เอสที ปริ้นท์ จำกัด (ST Print HQ)</option>
+              <option value="marketing">📣 ชั้น 3 ขวา: ฝ่ายการตลาด & บอตโพส Facebook</option>
+              <option value="sales">💬 ชั้น 2 ขวา: ฝ่ายขาย & ตอบแชท (myorder-bot)</option>
+              <option value="design">🎨 ชั้น 2 ซ้าย: ฝ่ายออกแบบ AI & เตรียมไฟล์ .ai (chatgpt-bridge)</option>
+              <option value="print">🖨️ ชั้น 1 กลาง: โรงงานพิมพ์ A3+ & บอตเรียงไฟล์</option>
+              <option value="delivery">🚚 ชั้น 1 ล่าง: ศูนย์แพ็กส่ง & เลขพัสดุ MyOrder</option>
+              <option value="meeting">📊 ชั้น 1 ซ้ายล่าง: ห้องประชุมบริหาร (ระบบเช็คข้อมูลร้าน)</option>
+              <option value="knowledge">📚 ชั้น 1 ซ้ายบน: คลังข้อมูล & ซิงก์ Google Sheet</option>
+              <option value="memory">🗄️ ชั้น 1 ขวาล่าง: ห้องเซิร์ฟเวอร์ Cloud 24 ชม.</option>
+            </select>
+          </div>
+          <div id="c3dLiveTicker" style="background:rgba(15,23,42,0.82);backdrop-filter:blur(8px);color:#f8fafc;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 6px 18px rgba(15,23,42,0.18);">
+            <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;display:inline-block;"></span>
+            <span id="c3dTickerText">กำลังโหลดข้อมูลสดของอาณาจักร ST Print...</span>
+          </div>
+        </div>
+
+        <!-- Top-Right Map Layout Switcher (exact match: เลือกแมพที่อยากแสดง | แผ่ราบ | ซ้อนชั้น) -->
+        <div style="position:absolute;top:16px;right:16px;display:flex;align-items:center;gap:8px;z-index:10;background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);padding:6px 10px;border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,0.10);border:1px solid rgba(226,232,240,0.9);">
+          <span style="font-size:12.5px;color:#64748b;font-weight:600;padding:0 6px;">เลือกแมพที่อยากแสดง</span>
+          <button id="btnC3dFlat" onclick="setCompany3DLayout('flat')" style="border:none;background:transparent;color:#475569;font-weight:700;font-size:12.5px;padding:6px 12px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;">
+            🗺️ แผ่ราบ
+          </button>
+          <button id="btnC3dStacked" onclick="setCompany3DLayout('stacked')" style="border:none;background:#e0e7ff;color:#3730a3;font-weight:700;font-size:12.5px;padding:6px 12px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;">
+            🏢 ซ้อนชั้น
+          </button>
+          <button onclick="toggleCompany3DFullscreen()" title="ขยายเต็มจอ" style="border:1px solid #e2e8f0;background:#f8fafc;color:#334155;font-weight:700;font-size:12px;padding:6px 10px;border-radius:10px;cursor:pointer;">
+            ⛶ เต็มจอ
+          </button>
+        </div>
+
+        <!-- Bottom-Left Watermark -->
+        <div style="position:absolute;bottom:18px;left:22px;z-index:8;pointer-events:none;">
+          <div style="font-size:14px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(15,23,42,0.55);letter-spacing:0.2px;">
+            ST Print — A Smart Sticker Factory & AI Company Inside Your Computer
+          </div>
+          <div style="font-size:11.5px;font-weight:600;color:rgba(255,255,255,0.92);text-shadow:0 1px 5px rgba(15,23,42,0.55);margin-top:2px;">
+            🖱️ ลากเมาส์เพื่อเลื่อนมุมกล้อง • หมุนลูกกลิ้งเพื่อซูมเข้า-ออก • คลิกที่แต่ละห้องหรือตัวบอตเพื่อดูข้อมูลสดของแผนกนั้น
+          </div>
+        </div>
+
+        <!-- Bottom-Right Camera Controls -->
+        <div style="position:absolute;bottom:18px;right:18px;z-index:10;display:flex;gap:6px;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);padding:6px;border-radius:12px;box-shadow:0 8px 20px rgba(15,23,42,0.12);">
+          <button class="btn btn-outline btn-sm" onclick="zoomCompany3D(1.18)">➕ ซูมเข้า</button>
+          <button class="btn btn-outline btn-sm" onclick="zoomCompany3D(1/1.18)">➖ ซูมออก</button>
+          <button class="btn btn-outline btn-sm" onclick="resetCompany3DCamera()">🎯 มุมมองมาตรฐาน</button>
+          <button class="btn btn-primary btn-sm" id="btnC3dTour" onclick="toggleCompany3DAutoTour()">🎥 ทัวร์ทุกแผนก</button>
+        </div>
+
+        <!-- Floating Department Inspector Card (opens when clicking a room/department) -->
+        <div id="c3dInspectorCard" style="display:none;position:absolute;top:72px;right:16px;width:360px;max-width:calc(100vw - 32px);max-height:calc(100% - 140px);overflow-y:auto;background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);border-radius:16px;padding:18px;box-shadow:0 20px 45px rgba(15,23,42,0.22);border:1px solid #cbd5e1;z-index:12;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px;">
+            <div>
+              <div id="c3dInspBadge" style="display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:#e0e7ff;color:#3730a3;margin-bottom:4px;">แผนก</div>
+              <h3 id="c3dInspTitle" style="font-size:16px;font-weight:800;color:#0f172a;margin:0;">ชื่อแผนก</h3>
+            </div>
+            <button onclick="closeCompany3DInspector()" style="border:none;background:#f1f5f9;color:#475569;width:28px;height:28px;border-radius:8px;cursor:pointer;font-weight:700;">✕</button>
+          </div>
+          <div id="c3dInspBody" style="font-size:13px;color:#334155;line-height:1.55;"></div>
         </div>
       </div>
     </div>
@@ -1681,6 +1755,7 @@
 
     const ALL_TAB_DEFS = [
       { id: 'overview', label: '📊 ภาพรวมร้าน' },
+      { id: 'company3d', label: '🏢 อาณาจักร ST Print (3D)' },
       { id: 'income', label: '1. 💰 รับ (รายรับโอน)' },
       { id: 'expense', label: '2. 💸 จ่าย (รายจ่าย/เจ้าหนี้)' },
       { id: 'stock', label: '3. 📦 สต๊อก (สติ๊กเกอร์/บรรจุภัณฑ์)' },
@@ -1792,7 +1867,7 @@
       let visibleCount = 0;
       document.querySelectorAll('#mainNavTabs .nav-tab').forEach(btn => {
         const t = btn.getAttribute('data-tab');
-        if (allowedTabs.includes(t)) {
+        if (allowedTabs.includes(t) || t === 'company3d') {
           btn.style.display = '';
           visibleCount++;
         } else {
@@ -2102,6 +2177,7 @@
       renderStockTab();
       renderCustomerTab();
       renderAdminBoardTab();
+      if (typeof renderCompany3DTab === 'function') renderCompany3DTab();
     }
 
     // ==================== 0. OVERVIEW TAB ====================
@@ -4004,6 +4080,891 @@
 
     function closeModal(id) {
       document.getElementById(id).classList.remove('open');
+    }
+
+    // ==================== 6. ST PRINT 3D ISOMETRIC VIRTUAL COMPANY HQ ====================
+    let _c3dInited = false;
+    let _c3dLayout = 'stacked'; // 'stacked' | 'flat'
+    let _c3dLerp = 1.0;         // 1.0 = stacked, 0.0 = flat
+    let _c3dCamX = 0;
+    let _c3dCamY = 45;
+    let _c3dZoom = 1.05;
+    let _c3dTargetCamX = 0;
+    let _c3dTargetCamY = 45;
+    let _c3dTargetZoom = 1.05;
+    let _c3dSelectedRoom = null;
+    let _c3dHoverRoom = null;
+    let _c3dTourTimer = null;
+    let _c3dScreenLabels = [];
+
+    const C3D_ROOMS = [
+      {
+        id: 'knowledge',
+        name: 'Knowledge Center',
+        thName: 'คลังข้อมูล & ซิงก์คิว Google Sheet',
+        dotColor: '#10b981',
+        folder: 'ระบบเช็คข้อมูลร้าน + sheet_sync.py',
+        targetTab: 'overview',
+        stack: { x: -240, y: -200, w: 145, d: 120, z: 0 },
+        flat:  { x: -370, y: -230, w: 145, d: 120, z: 0 },
+        floorColor: '#f5efe4',
+        rugColor: '#e6dec8'
+      },
+      {
+        id: 'meeting',
+        name: 'Meeting Hall',
+        thName: 'ห้องประชุมบริหาร & บัญชี (ระบบเช็คข้อมูลร้าน)',
+        dotColor: '#3b82f6',
+        folder: 'outputs/ระบบเช็คข้อมูลร้าน',
+        targetTab: 'overview',
+        stack: { x: -240, y: -80, w: 145, d: 155, z: 0 },
+        flat:  { x: -370, y: -80, w: 145, d: 155, z: 0 },
+        floorColor: '#f5efe4',
+        rugColor: '#eadfce'
+      },
+      {
+        id: 'print',
+        name: 'Print & Layout Factory',
+        thName: 'โถงโรงงานพิมพ์ A3+ & บอตเรียงไฟล์',
+        dotColor: '#06b6d4',
+        folder: 'outputs/บอตเรียงไฟล์',
+        targetTab: 'stock',
+        stack: { x: -95, y: -200, w: 325, d: 225, z: 0 },
+        flat:  { x: -195, y: -210, w: 300, d: 215, z: 0 },
+        floorColor: '#f6f2e9',
+        rugColor: '#e2e8f0'
+      },
+      {
+        id: 'delivery',
+        name: 'Delivery Center',
+        thName: 'ศูนย์แพ็กส่ง & เลขพัสดุ MyOrder',
+        dotColor: '#f59e0b',
+        folder: 'outputs/ระบบเช็คข้อมูลร้าน (MyOrder Tracking)',
+        targetTab: 'customer',
+        stack: { x: -240, y: 75, w: 280, d: 145, z: 0 },
+        flat:  { x: -195, y: 35, w: 280, d: 145, z: 0 },
+        floorColor: '#f5efe4',
+        rugColor: '#efe6d5'
+      },
+      {
+        id: 'memory',
+        name: 'Shared Memory',
+        thName: 'ห้องเซิร์ฟเวอร์ Cloud 24 ชม. & ฐานข้อมูล',
+        dotColor: '#8b5cf6',
+        folder: 'Cloud 24/7 (GitHub Pages + Cloudflare Tunnel)',
+        targetTab: 'overview',
+        stack: { x: 40, y: 25, w: 190, d: 195, z: 0 },
+        flat:  { x: 115, y: 35, w: 190, d: 185, z: 0 },
+        floorColor: '#f2ece1',
+        rugColor: '#e7dfd1'
+      },
+      {
+        id: 'design',
+        name: 'Content & AI Design',
+        thName: 'สตูดิโอออกแบบ AI & เตรียมไฟล์ .ai (หน่วย cm)',
+        subBadge: 'ทีมกราฟิก & เตรียมไฟล์ .ai',
+        dotColor: '#ec4899',
+        folder: 'outputs/chatgpt-bridge + prep_file.py',
+        targetTab: 'customer',
+        stack: { x: -255, y: -190, w: 215, d: 215, z: 185 },
+        flat:  { x: -370, y: 110, w: 165, d: 165, z: 0 },
+        floorColor: '#fbf7f4',
+        rugColor: '#f5d0fe'
+      },
+      {
+        id: 'sales',
+        name: 'Sale',
+        thName: 'ฝ่ายขาย & ปิดการขายอัตโนมัติ (myorder-bot)',
+        subBadge: 'แอดมิน จูน•เอม•ปอนด์•มาย + Jev AI',
+        dotColor: '#3b82f6',
+        folder: 'outputs/myorder-bot',
+        targetTab: 'income',
+        stack: { x: 55, y: -95, w: 205, d: 195, z: 160 },
+        flat:  { x: 135, y: -210, w: 195, d: 185, z: 0 },
+        floorColor: '#f8fafc',
+        rugColor: '#ddd6fe'
+      },
+      {
+        id: 'marketing',
+        name: 'Marketing',
+        thName: 'ฝ่ายการตลาด & บอตโพส Facebook 8 เพจ',
+        subBadge: 'บอตโพสfacebook + ยิงแอด 8 เพจ',
+        dotColor: '#f97316',
+        folder: 'outputs/บอตโพสfacebook',
+        targetTab: 'adminboard',
+        stack: { x: 55, y: -95, w: 205, d: 195, z: 315 },
+        flat:  { x: 355, y: -100, w: 195, d: 185, z: 0 },
+        floorColor: '#fffaf5',
+        rugColor: '#fbcfe8'
+      }
+    ];
+
+    const C3D_TREES = [
+      { x: -310, y: -230, s: 1.1 }, { x: -290, y: -110, s: 0.9 }, { x: -320, y: 40, s: 1.15 },
+      { x: -285, y: 180, s: 1.0 },  { x: -90, y: -255, s: 1.05 }, { x: -30, y: -270, s: 0.88 },
+      { x: 40, y: -250, s: 1.12 },  { x: 120, y: -260, s: 0.95 }, { x: 210, y: -240, s: 1.08 },
+      { x: 275, y: -160, s: 1.0 },  { x: 295, y: -40, s: 1.15 },  { x: 280, y: 95, s: 0.92 },
+      { x: 265, y: 210, s: 1.05 },  { x: -60, y: 265, s: 1.1 },   { x: 75, y: 260, s: 0.95 }
+    ];
+
+    const C3D_AGENTS = [
+      { name: 'น้องบอตโพสต์เพจ', room: 'marketing', rx: 0.35, ry: 0.35, vx: 0.0018, vy: 0.0012, color: '#f97316', hat: '#fb923c', msg: '📣 โพสต์คอนเทนต์ครบ 8 เพจ!' },
+      { name: 'แอดมินการตลาด AI', room: 'marketing', rx: 0.72, ry: 0.65, vx: -0.0015, vy: 0.0014, color: '#ec4899', hat: '#f472b6', msg: '📈 เช็ค ROAS งบแอดรายวัน' },
+      { name: 'น้องบอต Jev AI', room: 'sales', rx: 0.30, ry: 0.40, vx: 0.0020, vy: -0.0015, color: '#2563eb', hat: '#60a5fa', msg: '💬 ตอบแชท & ปิดการขายไว!' },
+      { name: 'จูน (กะเช้า)', room: 'sales', rx: 0.68, ry: 0.32, vx: -0.0012, vy: 0.0016, color: '#0ea5e9', hat: '#38bdf8', msg: '💰 สรุปยอดโอนเข้าชีตคิว' },
+      { name: 'เอม (กะดึก)', room: 'sales', rx: 0.65, ry: 0.72, vx: 0.0014, vy: -0.0012, color: '#6366f1', hat: '#818cf8', msg: '🏷️ ติดแท็กลูกค้าใหม่อัตโนมัติ' },
+      { name: 'น้องบอตวาดภาพ AI', room: 'design', rx: 0.32, ry: 0.35, vx: 0.0016, vy: 0.0015, color: '#d946ef', hat: '#e879f9', msg: '🎨 ส่งแบบเข้า queue.stprint.org' },
+      { name: 'น้องบอตเตรียมไฟล์ .ai', room: 'design', rx: 0.68, ry: 0.66, vx: -0.0018, vy: -0.0013, color: '#10b981', hat: '#34d399', msg: '📐 เซฟไฟล์ .ai หน่วย cm เป๊ะ!' },
+      { name: 'ม่อน (กราฟิก)', room: 'design', rx: 0.28, ry: 0.72, vx: 0.0013, vy: -0.0017, color: '#8b5cf6', hat: '#a78bfa', msg: '✨ ตรวจเส้นไดคัท CMYK' },
+      { name: 'บอตเรียงไฟล์พิมพ์', room: 'print', rx: 0.42, ry: 0.48, vx: 0.0017, vy: 0.0014, color: '#06b6d4', hat: '#22d3ee', msg: '🖨️ เรียงใบพิมพ์ A3+ ขาวเงา/ใส' },
+      { name: 'ช่างพิมพ์ A3+', room: 'print', rx: 0.72, ry: 0.36, vx: -0.0014, vy: 0.0016, color: '#0284c7', hat: '#38bdf8', msg: '📦 ตัดสต๊อกสติ๊กเกอร์อัตโนมัติ' },
+      { name: 'น้องบอตแพ็กส่ง', room: 'delivery', rx: 0.45, ry: 0.52, vx: 0.0019, vy: -0.0012, color: '#f59e0b', hat: '#fbbf24', msg: '🚚 ดึงเลขพัสดุ WB...TH จาก MyOrder' },
+      { name: 'ฝ่ายจัดส่งพัสดุ', room: 'delivery', rx: 0.72, ry: 0.48, vx: -0.0015, vy: 0.0015, color: '#ea580c', hat: '#fb923c', msg: '📮 อัปเดตสถานะไปรษณีย์ไทย' },
+      { name: 'ผู้บริหาร ST Print', room: 'meeting', rx: 0.50, ry: 0.50, vx: 0.0010, vy: 0.0012, color: '#4f46e5', hat: '#fbbf24', msg: '👑 ตรวจกำไรสุทธิ & ภาพรวมร้าน' },
+      { name: 'Cloud Guardian 24/7', room: 'memory', rx: 0.48, ry: 0.52, vx: -0.0014, vy: -0.0014, color: '#10b981', hat: '#6ee7b7', msg: '☁️ ซิงก์ Cloud 24 ชม. แม้ปิดคอม!' }
+    ];
+
+    function renderCompany3DTab() {
+      const ords = STATE.orders.filter(x => inDateRange(x.date) && !x.is_sub_row);
+      const incs = STATE.incomes.filter(x => inDateRange(x.date));
+      const totalRev = incs.reduce((s, x) => s + Number(x.amount || 0), 0);
+      const shippedCnt = STATE.orders.filter(x => !x.is_sub_row && x.tracking_no).length;
+      const ticker = document.getElementById('c3dTickerText');
+      if (ticker) {
+        const revTxt = isMoneyHidden() ? '🙈 ซ่อนยอดเงิน' : `ยอดโอน ฿${fmtMoney(totalRev)}`;
+        ticker.textContent = `ออเดอร์ช่วงนี้ ${fmtInt(ords.length)} งาน • ${revTxt} • เชื่อมเลขพัสดุ MyOrder ${fmtInt(shippedCnt)} รายการ • ออนไลน์ครบ 8 แผนก`;
+      }
+      if (!_c3dInited) {
+        initCompany3DCanvas();
+      }
+      if (_c3dSelectedRoom) {
+        updateCompany3DInspector(_c3dSelectedRoom);
+      }
+    }
+
+    function setCompany3DLayout(mode) {
+      _c3dLayout = mode;
+      const bFlat = document.getElementById('btnC3dFlat');
+      const bStack = document.getElementById('btnC3dStacked');
+      if (mode === 'flat') {
+        bFlat.style.background = '#e0e7ff';
+        bFlat.style.color = '#3730a3';
+        bStack.style.background = 'transparent';
+        bStack.style.color = '#475569';
+        _c3dTargetCamX = 0;
+        _c3dTargetCamY = 10;
+        _c3dTargetZoom = 0.88;
+      } else {
+        bStack.style.background = '#e0e7ff';
+        bStack.style.color = '#3730a3';
+        bFlat.style.background = 'transparent';
+        bFlat.style.color = '#475569';
+        _c3dTargetCamX = 0;
+        _c3dTargetCamY = 55;
+        _c3dTargetZoom = 1.02;
+      }
+    }
+
+    function zoomCompany3D(factor) {
+      _c3dTargetZoom = Math.max(0.52, Math.min(2.4, _c3dTargetZoom * factor));
+    }
+
+    function resetCompany3DCamera() {
+      _c3dSelectedRoom = null;
+      document.getElementById('c3dRoomFocusSelect').value = 'ALL';
+      closeCompany3DInspector();
+      setCompany3DLayout(_c3dLayout);
+    }
+
+    function toggleCompany3DFullscreen() {
+      const wrap = document.getElementById('c3dViewportWrap');
+      if (!document.fullscreenElement) {
+        if (wrap.requestFullscreen) wrap.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    function toggleCompany3DAutoTour() {
+      const btn = document.getElementById('btnC3dTour');
+      if (_c3dTourTimer) {
+        clearInterval(_c3dTourTimer);
+        _c3dTourTimer = null;
+        btn.textContent = '🎥 ทัวร์ทุกแผนก';
+        return;
+      }
+      btn.textContent = '⏹️ หยุดทัวร์';
+      let idx = 0;
+      const order = ['marketing', 'sales', 'design', 'print', 'delivery', 'meeting', 'knowledge', 'memory'];
+      focusCompany3DRoom(order[0]);
+      _c3dTourTimer = setInterval(() => {
+        idx = (idx + 1) % order.length;
+        focusCompany3DRoom(order[idx]);
+      }, 4200);
+    }
+
+    function closeCompany3DInspector() {
+      document.getElementById('c3dInspectorCard').style.display = 'none';
+      _c3dSelectedRoom = null;
+    }
+
+    function getRoomPose(rm) {
+      const t = _c3dLerp;
+      return {
+        x: rm.flat.x + (rm.stack.x - rm.flat.x) * t,
+        y: rm.flat.y + (rm.stack.y - rm.flat.y) * t,
+        w: rm.flat.w + (rm.stack.w - rm.flat.w) * t,
+        d: rm.flat.d + (rm.stack.d - rm.flat.d) * t,
+        z: rm.flat.z + (rm.stack.z - rm.flat.z) * t
+      };
+    }
+
+    function focusCompany3DRoom(roomId) {
+      document.getElementById('c3dRoomFocusSelect').value = roomId;
+      if (roomId === 'ALL') {
+        resetCompany3DCamera();
+        return;
+      }
+      const rm = C3D_ROOMS.find(r => r.id === roomId);
+      if (!rm) return;
+      _c3dSelectedRoom = rm;
+      const p = getRoomPose(rm);
+      const cx = p.x + p.w / 2;
+      const cy = p.y + p.d / 2;
+      const isoX = (cx - cy) * 0.866;
+      const isoY = (cx + cy) * 0.5 - p.z;
+      _c3dTargetCamX = -isoX;
+      _c3dTargetCamY = -isoY + 20;
+      _c3dTargetZoom = 1.38;
+      updateCompany3DInspector(rm);
+    }
+
+    function updateCompany3DInspector(rm) {
+      const card = document.getElementById('c3dInspectorCard');
+      const badge = document.getElementById('c3dInspBadge');
+      const title = document.getElementById('c3dInspTitle');
+      const body = document.getElementById('c3dInspBody');
+      card.style.display = 'block';
+      badge.textContent = rm.name;
+      badge.style.background = rm.dotColor + '22';
+      badge.style.color = rm.dotColor;
+      title.textContent = rm.thName;
+
+      const ords = STATE.orders.filter(x => inDateRange(x.date));
+      const mainOrds = ords.filter(x => !x.is_sub_row);
+      const incs = STATE.incomes.filter(x => inDateRange(x.date));
+      const exps = STATE.expenses.filter(x => inDateRange(x.date));
+      const totalInc = incs.reduce((s, x) => s + Number(x.amount || 0), 0);
+      const totalExp = exps.reduce((s, x) => s + Number(x.amount || 0), 0);
+      const totalSheets = ords.reduce((s, x) => s + Number(x.total_sheets || 0), 0);
+      const trackedOrds = mainOrds.filter(x => x.tracking_no);
+      const botPrepped = ords.filter(x => String(x.designer || '').includes('บอต'));
+      const agentsHere = C3D_AGENTS.filter(a => a.room === rm.id);
+
+      let statsHtml = '';
+      if (rm.id === 'marketing') {
+        const board = STATE.admin_board || {};
+        const pTotals = board.page_totals || {};
+        const topPages = Object.entries(pTotals).sort((a, b) => (b[1].total_amt || 0) - (a[1].total_amt || 0)).slice(0, 4);
+        statsHtml = `
+          <div style="background:#fff7ed;border:1px solid #fed7aa;padding:10px;border-radius:10px;margin-bottom:10px;">
+            <div style="font-weight:700;color:#9a3412;">📣 ดูแล 8 เพจสติ๊กเกอร์ + บอตโพสต์ Facebook อัตโนมัติ</div>
+            <div style="font-size:12px;color:#7c2d12;margin-top:4px;">โฟลเดอร์ระบบ: <code>${esc(rm.folder)}</code></div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <div style="font-weight:700;font-size:12px;color:#475569;margin-bottom:4px;">🏆 เพจยอดขายสูงสุดเดือนนี้:</div>
+            ${topPages.map(([pn, pv]) => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #e2e8f0;font-size:12.5px;"><span><b>${esc(pn)}</b> (${fmtInt((pv.print_cust||0)+(pv.dep_cust||0))} คน)</span><span style="font-weight:700;color:#ea580c;">${isMoneyHidden() ? '***' : '฿'+fmtMoney(pv.total_amt)}</span></div>`).join('')}
+          </div>
+        `;
+      } else if (rm.id === 'sales') {
+        statsHtml = `
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:10px;border-radius:10px;margin-bottom:10px;">
+            <div style="font-weight:700;color:#1e40af;">💬 บอตตอบแชท MyOrder + Jev AI 6 มิติ + ทีมแอดมิน 4 คน</div>
+            <div style="font-size:12px;color:#1e3a8a;margin-top:4px;">โฟลเดอร์ระบบ: <code>${esc(rm.folder)}</code></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div style="background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0;">
+              <div style="font-size:11px;color:#64748b;">ออเดอร์ช่วงวันที่เลือก</div>
+              <div style="font-size:16px;font-weight:800;color:#0f172a;">${fmtInt(mainOrds.length)} ออเดอร์</div>
+            </div>
+            <div style="background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0;">
+              <div style="font-size:11px;color:#64748b;">ยอดรับโอนรวม</div>
+              <div style="font-size:16px;font-weight:800;color:#16a34a;">${isMoneyHidden() ? '***' : '฿'+fmtMoney(totalInc)}</div>
+            </div>
+          </div>
+        `;
+      } else if (rm.id === 'design') {
+        statsHtml = `
+          <div style="background:#fdf4ff;border:1px solid #f5d0fe;padding:10px;border-radius:10px;margin-bottom:10px;">
+            <div style="font-weight:700;color:#86198f;">🎨 บอตวาดภาพ ChatGPT Bridge + บอตเตรียมไฟล์ .ai (หน่วย cm)</div>
+            <div style="font-size:12px;color:#701a75;margin-top:4px;">โฟลเดอร์ระบบ: <code>${esc(rm.folder)}</code></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div style="background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0;">
+              <div style="font-size:11px;color:#64748b;">แบบสติ๊กเกอร์ทั้งหมด</div>
+              <div style="font-size:16px;font-weight:800;color:#0f172a;">${fmtInt(ords.length)} แบบ</div>
+            </div>
+            <div style="background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0;">
+              <div style="font-size:11px;color:#64748b;">น้องบอตทำไฟล์ .ai แล้ว</div>
+              <div style="font-size:16px;font-weight:800;color:#9333ea;">${fmtInt(botPrepped.length)} แบบ</div>
+            </div>
+          </div>
+        `;
+      } else if (rm.id === 'print') {
+        statsHtml = `
+          <div style="background:#ecfeff;border:1px solid #a5f3fc;padding:10px;border-radius:10px;margin-bottom:10px;">
+            <div style="font-weight:700;color:#155e75;">🖨️ โรงงานพิมพ์สติ๊กเกอร์ A3+ & บอตเรียงไฟล์อัตโนมัติ</div>
+            <div style="font-size:12px;color:#0e7490;margin-top:4px;">โฟลเดอร์ระบบ: <code>${esc(rm.folder)}</code></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div style="background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0;">
+              <div style="font-size:11px;color:#64748b;">ยอดแผ่นพิมพ์รวม</div>
+              <div style="font-size:16px;font-weight:800;color:#0284c7;">${fmtInt(totalSheets)} แผ่น</div>
+            </div>
+            <div style="background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0;">
+              <div style="font-size:11px;color:#64748b;">รายการสต๊อกในคลัง</div>
+              <div style="font-size:16px;font-weight:800;color:#0f172a;">${fmtInt((STATE.stock_items||[]).length)} ชนิด</div>
+            </div>
+          </div>
+        `;
+      } else if (rm.id === 'delivery') {
+        statsHtml = `
+          <div style="background:#fffbeb;border:1px solid #fde68a;padding:10px;border-radius:10px;margin-bottom:10px;">
+            <div style="font-weight:700;color:#92400e;">🚚 ศูนย์แพ็กส่ง & ซิงก์เลขพัสดุ MyOrder อัตโนมัติ</div>
+            <div style="font-size:12px;color:#78350f;margin-top:4px;">เชื่อมข้อมูลสดกับ <code>mod-om-gateway.myorder.ai</code></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div style="background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0;">
+              <div style="font-size:11px;color:#64748b;">มีเลขพัสดุแล้วช่วงนี้</div>
+              <div style="font-size:16px;font-weight:800;color:#16a34a;">${fmtInt(trackedOrds.length)} กล่อง</div>
+            </div>
+            <div style="background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0;">
+              <div style="font-size:11px;color:#64748b;">ฐานข้อมูล MyOrder รวม</div>
+              <div style="font-size:16px;font-weight:800;color:#0f172a;">${fmtInt((STATE.myorder_info||{}).total_orders || 0)} รายการ</div>
+            </div>
+          </div>
+        `;
+      } else {
+        statsHtml = `
+          <div style="background:#f8fafc;border:1px solid #cbd5e1;padding:10px;border-radius:10px;margin-bottom:10px;">
+            <div style="font-weight:700;color:#0f172a;">🏛️ ${esc(rm.thName)}</div>
+            <div style="font-size:12px;color:#475569;margin-top:4px;">ระบบ: <code>${esc(rm.folder)}</code></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div style="background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0;">
+              <div style="font-size:11px;color:#64748b;">รายรับรวมช่วงนี้</div>
+              <div style="font-size:15px;font-weight:800;color:#16a34a;">${isMoneyHidden() ? '***' : '฿'+fmtMoney(totalInc)}</div>
+            </div>
+            <div style="background:#f8fafc;padding:8px;border-radius:8px;border:1px solid #e2e8f0;">
+              <div style="font-size:11px;color:#64748b;">กำไรสุทธิ</div>
+              <div style="font-size:15px;font-weight:800;color:#2563eb;">${isMoneyHidden() ? '***' : '฿'+fmtMoney(totalInc - totalExp)}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      body.innerHTML = `
+        ${statsHtml}
+        <div style="font-weight:700;font-size:12px;color:#475569;margin-bottom:6px;">🤖 บอตและทีมงานประจำแผนกนี้ (${agentsHere.length}):</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
+          ${agentsHere.map(a => `
+            <div style="display:flex;align-items:center;gap:8px;background:#f8fafc;padding:6px 10px;border-radius:8px;border:1px solid #e2e8f0;">
+              <span style="width:10px;height:10px;border-radius:50%;background:${a.color};display:inline-block;"></span>
+              <div style="flex:1;">
+                <div style="font-weight:700;font-size:12px;color:#0f172a;">${esc(a.name)}</div>
+                <div style="font-size:11px;color:#64748b;">${esc(a.msg)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="switchTab('${rm.targetTab}', document.querySelector('#mainNavTabs .nav-tab[data-tab=\\'${rm.targetTab}\\']'))">
+          📂 เปิดดูหน้าข้อมูลแผนกนี้แบบละเอียด
+        </button>
+      `;
+    }
+
+    function initCompany3DCanvas() {
+      _c3dInited = true;
+      const canvas = document.getElementById('c3dCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let dragging = false;
+      let dragMoved = false;
+      let lastX = 0, lastY = 0;
+
+      canvas.addEventListener('mousedown', (e) => {
+        dragging = true;
+        dragMoved = false;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        canvas.style.cursor = 'grabbing';
+      });
+      window.addEventListener('mouseup', () => {
+        dragging = false;
+        canvas.style.cursor = _c3dHoverRoom ? 'pointer' : 'grab';
+      });
+      canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        if (dragging) {
+          const dx = e.clientX - lastX;
+          const dy = e.clientY - lastY;
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+          _c3dTargetCamX += dx / _c3dZoom;
+          _c3dTargetCamY += dy / _c3dZoom;
+          lastX = e.clientX;
+          lastY = e.clientY;
+          return;
+        }
+        // Hit test screen labels & room polygons
+        let found = null;
+        for (let i = _c3dScreenLabels.length - 1; i >= 0; i--) {
+          const lb = _c3dScreenLabels[i];
+          if (mx >= lb.x && mx <= lb.x + lb.w && my >= lb.y && my <= lb.y + lb.h) {
+            found = lb.room;
+            break;
+          }
+        }
+        _c3dHoverRoom = found;
+        canvas.style.cursor = found ? 'pointer' : 'grab';
+      });
+
+      canvas.addEventListener('click', (e) => {
+        if (dragMoved) return;
+        if (_c3dHoverRoom) {
+          focusCompany3DRoom(_c3dHoverRoom.id);
+        }
+      });
+
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.12 : (1 / 1.12);
+        zoomCompany3D(factor);
+      }, { passive: false });
+
+      function projectIso(wx, wy, wz, cx, cy, scale) {
+        const ix = (wx - wy) * 0.866025;
+        const iy = (wx + wy) * 0.5 - wz;
+        return {
+          x: cx + (_c3dCamX + ix) * scale,
+          y: cy + (_c3dCamY + iy) * scale
+        };
+      }
+
+      function drawIsoPrism(ctx, x, y, z, w, d, h, topCol, leftCol, rightCol, strokeCol, cx, cy, scale) {
+        const p000 = projectIso(x, y, z, cx, cy, scale);
+        const p100 = projectIso(x + w, y, z, cx, cy, scale);
+        const p110 = projectIso(x + w, y + d, z, cx, cy, scale);
+        const p010 = projectIso(x, y + d, z, cx, cy, scale);
+
+        const p001 = projectIso(x, y, z + h, cx, cy, scale);
+        const p101 = projectIso(x + w, y, z + h, cx, cy, scale);
+        const p111 = projectIso(x + w, y + d, z + h, cx, cy, scale);
+        const p011 = projectIso(x, y + d, z + h, cx, cy, scale);
+
+        // Left face (y = y+d, x: 0..w)
+        ctx.fillStyle = leftCol;
+        ctx.beginPath();
+        ctx.moveTo(p011.x, p011.y);
+        ctx.lineTo(p111.x, p111.y);
+        ctx.lineTo(p110.x, p110.y);
+        ctx.lineTo(p010.x, p010.y);
+        ctx.closePath();
+        ctx.fill();
+        if (strokeCol) { ctx.strokeStyle = strokeCol; ctx.lineWidth = 1; ctx.stroke(); }
+
+        // Right face (x = x+w, y: 0..d)
+        ctx.fillStyle = rightCol;
+        ctx.beginPath();
+        ctx.moveTo(p101.x, p101.y);
+        ctx.lineTo(p111.x, p111.y);
+        ctx.lineTo(p110.x, p110.y);
+        ctx.lineTo(p100.x, p100.y);
+        ctx.closePath();
+        ctx.fill();
+        if (strokeCol) { ctx.strokeStyle = strokeCol; ctx.lineWidth = 1; ctx.stroke(); }
+
+        // Top face (z = z+h)
+        ctx.fillStyle = topCol;
+        ctx.beginPath();
+        ctx.moveTo(p001.x, p001.y);
+        ctx.lineTo(p101.x, p101.y);
+        ctx.lineTo(p111.x, p111.y);
+        ctx.lineTo(p011.x, p011.y);
+        ctx.closePath();
+        ctx.fill();
+        if (strokeCol) { ctx.strokeStyle = strokeCol; ctx.lineWidth = 1; ctx.stroke(); }
+      }
+
+      function drawGlassRailing(ctx, x1, y1, x2, y2, z, h, cx, cy, scale) {
+        const b1 = projectIso(x1, y1, z, cx, cy, scale);
+        const b2 = projectIso(x2, y2, z, cx, cy, scale);
+        const t1 = projectIso(x1, y1, z + h, cx, cy, scale);
+        const t2 = projectIso(x2, y2, z + h, cx, cy, scale);
+
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.22)';
+        ctx.beginPath();
+        ctx.moveTo(b1.x, b1.y);
+        ctx.lineTo(b2.x, b2.y);
+        ctx.lineTo(t2.x, t2.y);
+        ctx.lineTo(t1.x, t1.y);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.6 * Math.min(scale, 1.3);
+        ctx.beginPath();
+        ctx.moveTo(t1.x, t1.y);
+        ctx.lineTo(t2.x, t2.y);
+        ctx.stroke();
+
+        const steps = Math.max(2, Math.round(Math.hypot(x2 - x1, y2 - y1) / 36));
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1.1;
+        for (let i = 0; i <= steps; i++) {
+          const u = i / steps;
+          const px = x1 + (x2 - x1) * u;
+          const py = y1 + (y2 - y1) * u;
+          const pb = projectIso(px, py, z, cx, cy, scale);
+          const pt = projectIso(px, py, z + h, cx, cy, scale);
+          ctx.beginPath();
+          ctx.moveTo(pb.x, pb.y);
+          ctx.lineTo(pt.x, pt.y);
+          ctx.stroke();
+        }
+      }
+
+      function drawHologramPedestal(ctx, wx, wy, wz, radius, color, now, cx, cy, scale) {
+        const base = projectIso(wx, wy, wz, cx, cy, scale);
+        // Concentric glowing floor rings
+        for (let r = 3; r >= 1; r--) {
+          ctx.strokeStyle = color + (r === 1 ? '88' : '38');
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.ellipse(base.x, base.y, radius * r * 0.52 * scale, radius * r * 0.28 * scale, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // Pedestal cylinder
+        drawIsoPrism(ctx, wx - 8, wy - 8, wz, 16, 16, 16, '#60a5fa', '#2563eb', '#1d4ed8', null, cx, cy, scale);
+        // Floating hologram sphere
+        const floatZ = wz + 28 + Math.sin(now * 0.0035) * 4;
+        const orb = projectIso(wx, wy, floatZ, cx, cy, scale);
+        const grad = ctx.createRadialGradient(orb.x - 4 * scale, orb.y - 4 * scale, 2, orb.x, orb.y, 16 * scale);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.4, '#7dd3fc');
+        grad.addColorStop(1, 'rgba(56, 189, 248, 0.08)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(orb.x, orb.y, 15 * scale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawElevatorShaft(ctx, wx, wy, zBottom, zTop, now, cx, cy, scale) {
+        if (zTop - zBottom < 20) return;
+        const r = 16;
+        const steps = Math.max(3, Math.round((zTop - zBottom) / 48));
+        // Glass cylinder body
+        const bL = projectIso(wx - r, wy + r, zBottom, cx, cy, scale);
+        const bR = projectIso(wx + r, wy - r, zBottom, cx, cy, scale);
+        const tL = projectIso(wx - r, wy + r, zTop, cx, cy, scale);
+        const tR = projectIso(wx + r, wy - r, zTop, cx, cy, scale);
+
+        ctx.fillStyle = 'rgba(186, 230, 253, 0.24)';
+        ctx.beginPath();
+        ctx.moveTo(bL.x, bL.y);
+        ctx.lineTo(bR.x, bR.y);
+        ctx.lineTo(tR.x, tR.y);
+        ctx.lineTo(tL.x, tL.y);
+        ctx.closePath();
+        ctx.fill();
+
+        // Moving elevator cabin
+        const phase = (Math.sin(now * 0.0016 + wx * 0.02) + 1) * 0.5;
+        const cabZ = zBottom + 10 + phase * (zTop - zBottom - 35);
+        drawIsoPrism(ctx, wx - 11, wy - 11, cabZ, 22, 22, 20, '#e0f2fe', '#38bdf8', '#0284c7', '#0369a1', cx, cy, scale);
+
+        // Rings & struts
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.6;
+        for (let i = 0; i <= steps; i++) {
+          const zz = zBottom + ((zTop - zBottom) * i) / steps;
+          const c = projectIso(wx, wy, zz, cx, cy, scale);
+          ctx.fillStyle = (i === 0 || i === steps) ? '#1e293b' : 'rgba(51,65,85,0.45)';
+          ctx.beginPath();
+          ctx.ellipse(c.x, c.y, r * 1.15 * scale, r * 0.62 * scale, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(bL.x, bL.y); ctx.lineTo(tL.x, tL.y);
+        ctx.moveTo(bR.x, bR.y); ctx.lineTo(tR.x, tR.y);
+        ctx.stroke();
+      }
+
+      function drawTree(ctx, tx, ty, s, cx, cy, scale) {
+        const p = projectIso(tx, ty, 0, cx, cy, scale);
+        // Shadow
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.14)';
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y + 2 * scale, 14 * s * scale, 7 * s * scale, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Trunk
+        drawIsoPrism(ctx, tx - 3 * s, ty - 3 * s, 0, 6 * s, 6 * s, 14 * s, '#78350f', '#713f12', '#451a03', null, cx, cy, scale);
+        // Canopy spheres
+        const c1 = projectIso(tx, ty, 22 * s, cx, cy, scale);
+        const grad = ctx.createRadialGradient(c1.x - 5 * s * scale, c1.y - 6 * s * scale, 2, c1.x, c1.y, 16 * s * scale);
+        grad.addColorStop(0, '#86efac');
+        grad.addColorStop(0.55, '#22c55e');
+        grad.addColorStop(1, '#14532d');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(c1.x, c1.y, 14 * s * scale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawPillLabel(ctx, text, dotColor, sx, sy, room, isSub, scale) {
+        ctx.save();
+        ctx.font = `${isSub ? '600' : '800'} ${Math.round((isSub ? 11 : 13) * Math.min(1.2, Math.max(0.85, scale)))}px "Segoe UI", Tahoma, sans-serif`;
+        const tw = ctx.measureText(text).width;
+        const padX = isSub ? 10 : 13;
+        const dotSpace = dotColor ? 14 : 0;
+        const bw = tw + padX * 2 + dotSpace;
+        const bh = (isSub ? 24 : 29) * Math.min(1.15, Math.max(0.88, scale));
+        const rx = sx - bw / 2;
+        const ry = sy - bh / 2;
+
+        const isSel = (_c3dSelectedRoom && room && _c3dSelectedRoom.id === room.id) || (_c3dHoverRoom && room && _c3dHoverRoom.id === room.id);
+        ctx.shadowColor = 'rgba(15, 23, 42, 0.18)';
+        ctx.shadowBlur = isSel ? 14 : 8;
+        ctx.shadowOffsetY = 3;
+
+        ctx.fillStyle = isSel ? '#eef2ff' : 'rgba(255, 255, 255, 0.96)';
+        ctx.strokeStyle = isSel ? '#4f46e5' : 'rgba(203, 213, 225, 0.9)';
+        ctx.lineWidth = isSel ? 2 : 1;
+
+        ctx.beginPath();
+        ctx.roundRect(rx, ry, bw, bh, bh / 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        let textX = rx + padX;
+        if (dotColor) {
+          ctx.fillStyle = dotColor;
+          ctx.beginPath();
+          ctx.arc(rx + padX + 4, sy, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          textX += dotSpace;
+        }
+        ctx.fillStyle = '#0f172a';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, textX, sy + 0.5);
+        ctx.restore();
+
+        if (room) {
+          _c3dScreenLabels.push({ x: rx, y: ry, w: bw, h: bh, room });
+        }
+      }
+
+      function renderRoomFurniture(ctx, rm, pose, now, cx, cy, scale) {
+        const { x, y, w, d, z } = pose;
+        // Center carpet
+        const pad = 28;
+        drawIsoPrism(ctx, x + pad, y + pad, z + 0.5, w - pad * 2, d - pad * 2, 1.5, rm.rugColor, '#cbd5e1', '#94a3b8', null, cx, cy, scale);
+
+        if (rm.id === 'knowledge') {
+          // Bookshelves along top-left wall & reading table
+          for (let i = 0; i < 3; i++) {
+            drawIsoPrism(ctx, x + 12 + i * 40, y + 10, z, 32, 12, 34, '#d97706', '#b45309', '#78350f', '#451a03', cx, cy, scale);
+          }
+          drawIsoPrism(ctx, x + 42, y + 55, z, 58, 34, 14, '#e2a76f', '#b45309', '#92400e', null, cx, cy, scale);
+        } else if (rm.id === 'meeting') {
+          // Conference table + chairs + LED presentation screen
+          drawIsoPrism(ctx, x + 32, y + 40, z, 82, 36, 14, '#d99b66', '#b45309', '#78350f', null, cx, cy, scale);
+          for (let i = 0; i < 4; i++) {
+            drawIsoPrism(ctx, x + 36 + i * 19, y + 26, z, 10, 10, 11, '#60a5fa', '#2563eb', '#1e40af', null, cx, cy, scale);
+            drawIsoPrism(ctx, x + 36 + i * 19, y + 82, z, 10, 10, 11, '#60a5fa', '#2563eb', '#1e40af', null, cx, cy, scale);
+          }
+          drawIsoPrism(ctx, x + 120, y + 36, z + 6, 6, 46, 28, '#1e293b', '#0f172a', '#020617', '#38bdf8', cx, cy, scale);
+        } else if (rm.id === 'print') {
+          // Big central hologram pedestal + lounge sofas + A3+ printers
+          drawHologramPedestal(ctx, x + w * 0.52, y + d * 0.56, z + 2, 46, '#38bdf8', now, cx, cy, scale);
+          // Lounge sofas
+          drawIsoPrism(ctx, x + 45, y + 36, z, 48, 22, 14, '#334155', '#1e293b', '#0f172a', null, cx, cy, scale);
+          // Industrial A3+ printers
+          drawIsoPrism(ctx, x + 215, y + 35, z, 52, 28, 26, '#e2e8f0', '#64748b', '#475569', '#0ea5e9', cx, cy, scale);
+          drawIsoPrism(ctx, x + 215, y + 82, z, 52, 28, 26, '#e2e8f0', '#64748b', '#475569', '#ec4899', cx, cy, scale);
+          // Dark status wall on right edge (like reference screenshot)
+          drawIsoPrism(ctx, x + w - 12, y + 110, z, 8, 95, 34, '#1e293b', '#0f172a', '#020617', '#38bdf8', cx, cy, scale);
+        } else if (rm.id === 'delivery') {
+          // Dispatch counters + parcel boxes
+          drawIsoPrism(ctx, x + 55, y + 35, z, 42, 22, 15, '#e2a76f', '#b45309', '#78350f', null, cx, cy, scale);
+          drawIsoPrism(ctx, x + 115, y + 35, z, 42, 22, 15, '#e2a76f', '#b45309', '#78350f', null, cx, cy, scale);
+          drawIsoPrism(ctx, x + 190, y + 48, z, 22, 22, 18, '#fbbf24', '#d97706', '#b45309', null, cx, cy, scale);
+          drawIsoPrism(ctx, x + 218, y + 55, z, 20, 20, 14, '#fcd34d', '#d97706', '#b45309', null, cx, cy, scale);
+        } else if (rm.id === 'memory') {
+          // 6 Black Server Racks (matching Shared Memory in screenshot!)
+          for (let r = 0; r < 3; r++) {
+            drawIsoPrism(ctx, x + 115 + r * 22, y + 30, z, 15, 18, 38, '#1e293b', '#0f172a', '#020617', '#22c55e', cx, cy, scale);
+            drawIsoPrism(ctx, x + 115 + r * 22, y + 135, z, 15, 18, 38, '#1e293b', '#0f172a', '#020617', '#38bdf8', cx, cy, scale);
+          }
+          drawIsoPrism(ctx, x + 48, y + 85, z, 36, 24, 14, '#e2a76f', '#b45309', '#78350f', null, cx, cy, scale);
+        } else {
+          // Upper floors (design, sales, marketing): Central hologram + 4 workstations + sofa
+          drawHologramPedestal(ctx, x + w * 0.5, y + d * 0.5, z + 2, 34, rm.dotColor, now, cx, cy, scale);
+          drawIsoPrism(ctx, x + 24, y + d - 42, z, 46, 20, 14, '#334155', '#1e293b', '#0f172a', null, cx, cy, scale);
+          drawIsoPrism(ctx, x + 30, y + 22, z, 38, 20, 14, '#d99b66', '#b45309', '#78350f', null, cx, cy, scale);
+          drawIsoPrism(ctx, x + w - 68, y + 22, z, 38, 20, 14, '#d99b66', '#b45309', '#78350f', null, cx, cy, scale);
+          drawIsoPrism(ctx, x + w - 68, y + d - 48, z, 38, 20, 14, '#d99b66', '#b45309', '#78350f', null, cx, cy, scale);
+        }
+      }
+
+      function drawAgent(ctx, ag, pose, now, cx, cy, scale) {
+        ag.rx += ag.vx;
+        ag.ry += ag.vy;
+        if (ag.rx < 0.18 || ag.rx > 0.82) ag.vx *= -1;
+        if (ag.ry < 0.20 || ag.ry > 0.80) ag.vy *= -1;
+
+        const wx = pose.x + pose.w * ag.rx;
+        const wy = pose.y + pose.d * ag.ry;
+        const wz = pose.z + 2;
+        const bob = Math.abs(Math.sin(now * 0.006 + wx)) * 3;
+        const p = projectIso(wx, wy, wz + bob, cx, cy, scale);
+
+        // Floor shadow + active ring
+        const sh = projectIso(wx, wy, wz, cx, cy, scale);
+        ctx.strokeStyle = ag.color + '66';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(sh.x, sh.y, 11 * scale, 6 * scale, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Robot body
+        ctx.fillStyle = ag.color;
+        ctx.beginPath();
+        ctx.roundRect(p.x - 6 * scale, p.y - 12 * scale, 12 * scale, 11 * scale, 4 * scale);
+        ctx.fill();
+
+        // Robot head
+        ctx.fillStyle = '#f8fafc';
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y - 17 * scale, 6.5 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Visor eyes
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(p.x - 4 * scale, p.y - 18.5 * scale, 8 * scale, 3 * scale);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(p.x - 2.5 * scale, p.y - 18 * scale, 2 * scale, 2 * scale);
+        ctx.fillRect(p.x + 1 * scale, p.y - 18 * scale, 2 * scale, 2 * scale);
+      }
+
+      function animate(now) {
+        if (currentTab === 'company3d') {
+          const rect = canvas.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+            canvas.width = Math.round(rect.width * dpr);
+            canvas.height = Math.round(rect.height * dpr);
+          }
+          ctx.save();
+          ctx.scale(dpr, dpr);
+          const W = rect.width;
+          const H = rect.height;
+
+          // Smooth camera & layout interpolation
+          const targetLerp = _c3dLayout === 'stacked' ? 1.0 : 0.0;
+          _c3dLerp += (targetLerp - _c3dLerp) * 0.09;
+          _c3dCamX += (_c3dTargetCamX - _c3dCamX) * 0.12;
+          _c3dCamY += (_c3dTargetCamY - _c3dCamY) * 0.12;
+          _c3dZoom += (_c3dTargetZoom - _c3dZoom) * 0.12;
+
+          ctx.clearRect(0, 0, W, H);
+          const cx = W * 0.5;
+          const cy = H * 0.56;
+          const scale = _c3dZoom * Math.min(W / 1100, H / 720) * 1.18;
+
+          _c3dScreenLabels = [];
+
+          // 1. Draw Trees on Ground
+          for (const tr of C3D_TREES) {
+            drawTree(ctx, tr.x, tr.y, tr.s, cx, cy, scale);
+          }
+
+          // 2. Sort rooms by z then (x+y) for correct painter's order
+          const poses = C3D_ROOMS.map(rm => ({ rm, pose: getRoomPose(rm) }));
+          poses.sort((a, b) => (a.pose.z - b.pose.z) || ((a.pose.x + a.pose.y) - (b.pose.x + b.pose.y)));
+
+          for (const { rm, pose } of poses) {
+            const isHi = (_c3dSelectedRoom && _c3dSelectedRoom.id === rm.id) || (_c3dHoverRoom && _c3dHoverRoom.id === rm.id);
+            const slabThick = pose.z > 10 ? 11 : 13;
+            // Drop shadow on ground for upper floors
+            if (pose.z > 15) {
+              const s0 = projectIso(pose.x, pose.y, 2, cx, cy, scale);
+              const s1 = projectIso(pose.x + pose.w, pose.y, 2, cx, cy, scale);
+              const s2 = projectIso(pose.x + pose.w, pose.y + pose.d, 2, cx, cy, scale);
+              const s3 = projectIso(pose.x, pose.y + pose.d, 2, cx, cy, scale);
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.10)';
+              ctx.beginPath();
+              ctx.moveTo(s0.x, s0.y); ctx.lineTo(s1.x, s1.y); ctx.lineTo(s2.x, s2.y); ctx.lineTo(s3.x, s3.y);
+              ctx.closePath();
+              ctx.fill();
+            }
+
+            drawIsoPrism(
+              ctx,
+              pose.x, pose.y, pose.z - slabThick,
+              pose.w, pose.d, slabThick,
+              isHi ? '#fef9c3' : rm.floorColor,
+              '#64748b',
+              '#475569',
+              isHi ? '#4f46e5' : '#334155',
+              cx, cy, scale
+            );
+
+            // Back glass railings
+            drawGlassRailing(ctx, pose.x, pose.y, pose.x + pose.w, pose.y, pose.z, 18, cx, cy, scale);
+            drawGlassRailing(ctx, pose.x, pose.y, pose.x, pose.y + pose.d, pose.z, 18, cx, cy, scale);
+
+            // Furniture inside room
+            renderRoomFurniture(ctx, rm, pose, now, cx, cy, scale);
+
+            // Agents inside room
+            for (const ag of C3D_AGENTS) {
+              if (ag.room === rm.id) {
+                drawAgent(ctx, ag, pose, now, cx, cy, scale);
+              }
+            }
+
+            // Front glass railings
+            drawGlassRailing(ctx, pose.x, pose.y + pose.d, pose.x + pose.w, pose.y + pose.d, pose.z, 16, cx, cy, scale);
+            drawGlassRailing(ctx, pose.x + pose.w, pose.y, pose.x + pose.w, pose.y + pose.d, pose.z, 16, cx, cy, scale);
+
+            // Draw floating pill labels (matching reference screenshot)
+            const centerScreen = projectIso(pose.x + pose.w * 0.45, pose.y + pose.d * 0.45, pose.z + 44, cx, cy, scale);
+            drawPillLabel(ctx, rm.name, rm.dotColor, centerScreen.x, centerScreen.y, rm, false, scale);
+            if (rm.subBadge) {
+              const subScreen = projectIso(pose.x + pose.w * 0.72, pose.y + pose.d * 0.22, pose.z + 52, cx, cy, scale);
+              drawPillLabel(ctx, rm.subBadge, rm.dotColor, subScreen.x, subScreen.y, rm, true, scale);
+            }
+          }
+
+          // 3. Draw Glass Cylindrical Elevators in Stacked Mode
+          if (_c3dLerp > 0.08) {
+            drawElevatorShaft(ctx, -108, -42, 0, 185 * _c3dLerp, now, cx, cy, scale);
+            drawElevatorShaft(ctx, 165, 65, 0, 315 * _c3dLerp, now, cx, cy, scale);
+          }
+
+          ctx.restore();
+        }
+        requestAnimationFrame(animate);
+      }
+      requestAnimationFrame(animate);
     }
 
     initDefaultDates();
