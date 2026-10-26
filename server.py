@@ -1986,16 +1986,33 @@ def _get_github_token() -> str:
     except Exception:
         pass
     try:
-        proc = subprocess.run(
-            ["git", "credential", "fill"],
-            input="protocol=https\nhost=github.com\n\n",
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        for line in (proc.stdout or "").splitlines():
-            if line.startswith("password="):
-                return line.split("=", 1)[1].strip()
+        import ctypes
+        from ctypes import wintypes
+
+        class _CREDENTIALW(ctypes.Structure):
+            _fields_ = [
+                ("Flags", wintypes.DWORD),
+                ("Type", wintypes.DWORD),
+                ("TargetName", wintypes.LPWSTR),
+                ("Comment", wintypes.LPWSTR),
+                ("LastWritten", wintypes.FILETIME),
+                ("CredentialBlobSize", wintypes.DWORD),
+                ("CredentialBlob", ctypes.POINTER(ctypes.c_ubyte)),
+                ("Persist", wintypes.DWORD),
+                ("AttributeCount", wintypes.DWORD),
+                ("Attributes", ctypes.c_void_p),
+                ("TargetAlias", wintypes.LPWSTR),
+                ("UserName", wintypes.LPWSTR),
+            ]
+
+        pcred = ctypes.POINTER(_CREDENTIALW)()
+        if ctypes.windll.advapi32.CredReadW("git:https://github.com", 1, 0, ctypes.byref(pcred)):
+            try:
+                c = pcred.contents
+                raw = ctypes.string_at(c.CredentialBlob, c.CredentialBlobSize)
+                return raw.decode("utf-16le").strip()
+            finally:
+                ctypes.windll.advapi32.CredFree(pcred)
     except Exception:
         pass
     return ""
@@ -2096,43 +2113,33 @@ def _write_mobile_url_file(tunnel_url: str) -> None:
         pass
 
 
+class _ExclusiveHTTPServer(ThreadingHTTPServer):
+    allow_reuse_address = False
+
+
 def _start_cloudflare_tunnel() -> None:
     global _PUBLIC_TUNNEL_URL
-    url_file = DATA_DIR / "mobile_url.txt"
+    cf_bin = shutil.which("cloudflared")
+    if not cf_bin:
+        return
     creationflags = 0x08000000 if os.name == "nt" else 0
+    sinfo = None
+    if os.name == "nt":
+        sinfo = subprocess.STARTUPINFO()
+        sinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        sinfo.wShowWindow = 0
     while True:
-        if url_file.exists():
-            try:
-                txt = url_file.read_text(encoding="utf-8", errors="replace")
-                m_existing = re.search(r"https://[a-zA-Z0-9\-]+\.trycloudflare\.com", txt)
-                if m_existing:
-                    chk = subprocess.run(
-                        ["tasklist", "/FI", "IMAGENAME eq cloudflared.exe"],
-                        capture_output=True,
-                        text=True,
-                        creationflags=creationflags,
-                    )
-                    if "cloudflared.exe" in (chk.stdout or "").lower():
-                        if _PUBLIC_TUNNEL_URL != m_existing.group(0):
-                            _PUBLIC_TUNNEL_URL = m_existing.group(0)
-                            _write_mobile_url_file(_PUBLIC_TUNNEL_URL)
-                            _publish_permanent_gateway(_PUBLIC_TUNNEL_URL)
-                        time.sleep(15)
-                        continue
-            except Exception:
-                pass
-        cf_bin = shutil.which("cloudflared")
-        if not cf_bin:
-            return
         try:
             proc = subprocess.Popen(
                 [cf_bin, "tunnel", "--url", f"http://127.0.0.1:{PORT}"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
                 creationflags=creationflags,
+                startupinfo=sinfo,
             )
             if proc.stdout:
                 for line in proc.stdout:
@@ -2144,7 +2151,7 @@ def _start_cloudflare_tunnel() -> None:
             proc.wait()
         except Exception:
             pass
-        time.sleep(5)
+        time.sleep(10)
 
 
 def _auto_sync_loop() -> None:
@@ -2228,7 +2235,7 @@ def main() -> None:
         except Exception as e:
             print(f"ซิงก์ครั้งแรกไม่สำเร็จ ({e}) — สามารถกดซิงก์ในหน้าเว็บได้")
     try:
-        server = ThreadingHTTPServer(("0.0.0.0", PORT), DashboardHandler)
+        server = _ExclusiveHTTPServer(("0.0.0.0", PORT), DashboardHandler)
     except OSError:
         print(f"เซิร์ฟเวอร์ทำงานอยู่แล้วที่ http://localhost:{PORT}")
         return
