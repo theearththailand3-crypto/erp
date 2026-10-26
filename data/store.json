@@ -217,5 +217,71 @@
       "hide_money": true,
       "can_manage_users": false
     }
-  ]
+  ],
+  "ad_spend_overrides": {
+    "STprint": {
+      "page": "STprint",
+      "daily_budget": 150.0,
+      "boost_pct": "",
+      "adjusted_budget": 350.0,
+      "boost_date": "2026-10-26",
+      "monthly_total": 0.0
+    },
+    "PLP": {
+      "page": "PLP",
+      "daily_budget": 523.25,
+      "boost_pct": "15%/15%/15%",
+      "adjusted_budget": 794.82,
+      "boost_date": "2026-10-11",
+      "monthly_total": 0.0
+    },
+    "ถูกดีจริง": {
+      "page": "ถูกดีจริง",
+      "daily_budget": 455.4,
+      "boost_pct": "15%/15%/15%",
+      "adjusted_budget": 692.59,
+      "boost_date": "2026-10-11",
+      "monthly_total": 0.0
+    },
+    "โรงงานสติ๊กเกอร์25": {
+      "page": "โรงงานสติ๊กเกอร์25",
+      "daily_budget": 346.45,
+      "boost_pct": "15%",
+      "adjusted_budget": 395.41,
+      "boost_date": "2026-10-11",
+      "monthly_total": 0.0
+    },
+    "ถููกเว้ย25": {
+      "page": "ถููกเว้ย25",
+      "daily_budget": 494.0,
+      "boost_pct": "",
+      "adjusted_budget": 494.0,
+      "boost_date": "",
+      "monthly_total": 0.0
+    },
+    "พิมพ์สวยการพิมพ์": {
+      "page": "พิมพ์สวยการพิมพ์",
+      "daily_budget": 200.0,
+      "boost_pct": "",
+      "adjusted_budget": 200.0,
+      "boost_date": "",
+      "monthly_total": 0.0
+    },
+    "ฉลาก25": {
+      "page": "ฉลาก25",
+      "daily_budget": 150.0,
+      "boost_pct": "",
+      "adjusted_budget": 150.0,
+      "boost_date": "",
+      "monthly_total": 0.0
+    },
+    "ปริ้นฉลาก": {
+      "page": "ปริ้นฉลาก",
+      "daily_budget": 150.0,
+      "boost_pct": "15%/15%",
+      "adjusted_budget": 197.8,
+      "boost_date": "2026-10-11",
+      "monthly_total": 0.0
+    }
+  }
 }
