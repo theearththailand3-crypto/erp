@@ -49,8 +49,8 @@ MYORDER_USER_AGENT = (
     "Chrome/131.0.0.0 Safari/537.36"
 )
 
-GSHEET_ID = "1cQzf9GhR5MdW8gDw3dTopLFAP8Z0gUiLeeqcy6EcM0c"
-GSHEET_OCT_GID = "2140811773"
+GSHEET_ID = "1rqqAl9nAc99TyfMed9zsAfvoQvH5LaClIdGOxoyt6co"
+GSHEET_OCT_GID = "1721963082"
 GSHEET_ADMIN_ID = "1xIo-PlD4j1aPrpK6YRGW50cdWWJpMZGnEO0LCKcjwVY"
 GSHEET_ADMIN_OCT_GID = "1846638698"
 PORT = int(os.environ.get("STPRINT_ERP_PORT", "3580"))
@@ -83,6 +83,101 @@ LAYOUT_OLD = {
     "color": 20, "size": 21, "sheets": 22, "bonus": 23, "qty": 24,
     "material": 25, "phone": 26, "recipient": 27, "address": 28, "st": 29,
 }
+
+
+def _resolve_sheet_layout(hdr_row: tuple[Any, ...] | list[Any]) -> dict[str, int | None]:
+    """Dynamically map 1-based column indices from sheet header row (supports 28/29/30/32-col layouts)."""
+    header_b = str((hdr_row[1] if len(hdr_row) > 1 else "") or "").strip()
+    base: dict[str, int | None] = dict(LAYOUT_OLD if header_b == "วันที่" else LAYOUT_NEW)
+    base.setdefault("dep_sales", None)
+    base.setdefault("buy_file", None)
+    base.setdefault("full_sales", None)
+
+    date_cols: list[int] = []
+    time_cols: list[int] = []
+    cust_cols: list[int] = []
+
+    for idx0, raw_cell in enumerate(hdr_row):
+        col1 = idx0 + 1
+        h = re.sub(r"\s+", " ", str(raw_cell or "").strip())
+        if not h:
+            continue
+        h_nospace = h.replace(" ", "")
+        if h == "ลำดับ":
+            base["seq"] = col1
+        elif h == "ชื่อ":
+            base["entry"] = col1
+        elif h == "วันที่":
+            date_cols.append(col1)
+        elif h_nospace in ("เซลล์มจ.", "เซลล์มจ"):
+            base["dep_sales"] = col1
+        elif h == "มัดจำ":
+            base["dep_amt"] = col1
+        elif h == "ซื้อไฟล์":
+            base["buy_file"] = col1
+        elif h == "เวลาโอน":
+            time_cols.append(col1)
+        elif h_nospace in ("เซลล์สต.", "เซลล์สต"):
+            base["full_sales"] = col1
+        elif h == "ส่วนต่าง":
+            base["full_amt"] = col1
+        elif h in ("บ.ช.", "บช.", "บ.ช"):
+            base["bank"] = col1
+        elif h == "ชำระ":
+            base["paid"] = col1
+        elif "หมายเหตุ" in h or h.lower() == "note":
+            base["note"] = col1
+        elif h in ("ลค.ใหม่", "ลูกค้าใหม่"):
+            base["new_cust"] = col1
+        elif h_nospace in ("ไฟล์ลค.", "ไฟล์ลูกค้า", "ไฟล์ลค"):
+            base["cust_file"] = col1
+        elif h == "ไฟล์เก่า":
+            base["old_file"] = col1
+        elif h == "เซลล์":
+            base["sales"] = col1
+        elif h == "ช่องทาง":
+            base["channel"] = col1
+        elif h in ("ชื่อลูกค้า", "ชื่อเฟส/ไลน์ ลูกค้า", "ชื่อเฟสลูกค้า"):
+            cust_cols.append(col1)
+        elif h == "ชื่องาน":
+            base["job"] = col1
+        elif h == "คนทำไฟล์":
+            base["designer"] = col1
+        elif h == "เวลาส่งปริ้น":
+            base["print_time"] = col1
+        elif h in ("สี", "พลาสเทล"):
+            base["color"] = col1
+        elif h == "ขนาด":
+            base["size"] = col1
+        elif h == "จำนวนแผ่น":
+            base["sheets"] = col1
+        elif h == "แถม":
+            base["bonus"] = col1
+        elif h_nospace in ("จำนวน/สั่ง", "จำนวนสั่ง"):
+            base["qty"] = col1
+        elif h == "ชนิดสติ๊กเกอร์":
+            base["material"] = col1
+        elif h.startswith("เบอร์โทร"):
+            base["phone"] = col1
+        elif h == "ที่อยู่จัดส่ง":
+            base["address"] = col1
+        elif h.upper() == "ST":
+            base["st"] = col1
+
+    if len(date_cols) >= 1:
+        base["dep_date"] = date_cols[0]
+    if len(date_cols) >= 2:
+        base["full_date"] = date_cols[1]
+    if len(time_cols) >= 1:
+        base["dep_time"] = time_cols[0]
+    if len(time_cols) >= 2:
+        base["full_time"] = time_cols[1]
+    if len(cust_cols) >= 1:
+        base["fb"] = cust_cols[0]
+    if len(cust_cols) >= 2:
+        base["recipient"] = cust_cols[1]
+
+    return base
 
 DEFAULT_STOCK_ITEMS = [
     {
@@ -415,16 +510,12 @@ def _norm_customer_key(fb: str, phone: str, recipient: str) -> str:
     return f"rec:{r}" if r else "unknown"
 
 
-def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
-    """Download and parse orders & transfers from Google Sheet."""
+def sync_from_google_sheet(all_months: bool = True) -> dict[str, Any]:
+    """Download and parse orders & transfers from Google Sheet (all monthly tabs)."""
     import openpyxl
 
-    if all_months:
-        url = f"https://docs.google.com/spreadsheets/d/{GSHEET_ID}/export?format=xlsx"
-        timeout = 45
-    else:
-        url = f"https://docs.google.com/spreadsheets/d/{GSHEET_ID}/export?format=xlsx&gid={GSHEET_OCT_GID}"
-        timeout = 25
+    url = f"https://docs.google.com/spreadsheets/d/{GSHEET_ID}/export?format=xlsx"
+    timeout = 45
 
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -456,8 +547,7 @@ def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
                 hdr_row = next(rows_iter)
             except StopIteration:
                 continue
-            header_b = str((hdr_row[1] if len(hdr_row) > 1 else "") or "").strip()
-            lay = LAYOUT_OLD if header_b == "วันที่" else LAYOUT_NEW
+            lay = _resolve_sheet_layout(hdr_row)
 
             last_primary_order: dict[str, Any] | None = None
             last_valid_date: str | None = None
@@ -476,7 +566,9 @@ def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
                 if job in ("None", "**"):
                     job = ""
 
-                dep_amt = _parse_float(g("dep_amt"))
+                raw_dep_amt = _parse_float(g("dep_amt"))
+                buy_amt = _parse_float(g("buy_file"))
+                dep_amt = raw_dep_amt + buy_amt
                 full_amt = _parse_float(g("full_amt"))
                 raw_dep_date = _norm_date(g("dep_date"))
                 raw_full_date = _norm_date(g("full_date"))
@@ -500,7 +592,12 @@ def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
                     continue
 
                 raw_seq = str(g("seq") or "").strip()
-                is_sub_row = raw_seq == "**" or str(g("full_amt") or "").strip() == "**"
+                is_sub_row = (
+                    raw_seq == "**"
+                    or str(g("full_amt") or "").strip() == "**"
+                    or str(g("dep_amt") or "").strip() == "**"
+                    or str(g("buy_file") or "").strip() == "**"
+                )
 
                 dep_time = _norm_time(g("dep_time"))
                 full_time = _norm_time(g("full_time"))
@@ -525,9 +622,22 @@ def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
                     order_type = "ทั่วไป"
                     order_type_code = "other"
 
+                dep_sales = str(g("dep_sales") or "").strip()
+                if dep_sales in ("None", "**", "-"):
+                    dep_sales = ""
+                full_sales = str(g("full_sales") or "").strip()
+                if full_sales in ("None", "**", "-"):
+                    full_sales = ""
                 sales = str(g("sales") or "").strip()
                 if sales in ("None", "**", "-"):
                     sales = ""
+                if not sales:
+                    sales = full_sales or dep_sales
+                if not dep_sales:
+                    dep_sales = sales
+                if not full_sales:
+                    full_sales = sales
+
                 channel = str(g("channel") or "").strip()
                 if channel in ("None", "**", "-"):
                     channel = ""
@@ -579,6 +689,10 @@ def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
                         channel = last_primary_order["channel"]
                     if not sales:
                         sales = last_primary_order["sales"]
+                    if not dep_sales:
+                        dep_sales = last_primary_order.get("dep_sales") or sales
+                    if not full_sales:
+                        full_sales = last_primary_order.get("full_sales") or sales
 
                 order_rec = {
                     "id": order_id,
@@ -588,9 +702,12 @@ def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
                     "is_sub_row": is_sub_row,
                     "date": order_date,
                     "dep_date": dep_date or "",
+                    "dep_sales": dep_sales,
                     "dep_amt": dep_amt,
+                    "buy_amt": buy_amt,
                     "dep_time": dep_time,
                     "full_date": full_date or "",
+                    "full_sales": full_sales,
                     "full_amt": full_amt,
                     "full_time": full_time,
                     "total_amt": dep_amt + full_amt,
@@ -623,11 +740,16 @@ def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
 
                 # Generate transfer income records ("โอนเป็นหลัก")
                 if dep_amt > 0:
+                    dep_label = (
+                        "โอนมัดจำ + ซื้อไฟล์"
+                        if (raw_dep_amt > 0 and buy_amt > 0)
+                        else ("ซื้อไฟล์" if buy_amt > 0 else "โอนมัดจำ")
+                    )
                     incomes.append({
                         "id": f"inc-dep-{order_id}",
                         "source": "sheet",
                         "transfer_type": "deposit",
-                        "transfer_type_label": "โอนมัดจำ",
+                        "transfer_type_label": dep_label,
                         "date": dep_date or order_date,
                         "time": dep_time,
                         "amount": dep_amt,
@@ -637,7 +759,7 @@ def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
                         "recipient": recipient,
                         "job": job,
                         "channel": channel,
-                        "sales": sales,
+                        "sales": dep_sales or sales,
                         "order_id": order_id,
                         "row": r_idx,
                         "sheet_name": sheet_name,
@@ -658,7 +780,7 @@ def sync_from_google_sheet(all_months: bool = False) -> dict[str, Any]:
                         "recipient": recipient,
                         "job": job,
                         "channel": channel,
-                        "sales": sales,
+                        "sales": full_sales or sales,
                         "order_id": order_id,
                         "row": r_idx,
                         "sheet_name": sheet_name,
@@ -816,20 +938,22 @@ def build_admin_board_state(store: dict[str, Any], orders: list[dict[str, Any]] 
         d_amt = float(o.get("dep_amt") or 0.0)
         if f_amt <= 0 and d_amt <= 0:
             continue
-        adm = _map_sales_to_admin(str(o.get("sales") or "")) or "จูน"
+        adm_default = _map_sales_to_admin(str(o.get("sales") or "")) or "จูน"
+        adm_dep = _map_sales_to_admin(str(o.get("dep_sales") or o.get("sales") or "")) or adm_default
+        adm_full = _map_sales_to_admin(str(o.get("full_sales") or o.get("sales") or "")) or adm_default
         pg = _map_channel_to_page(str(o.get("channel") or "")) or "STprint"
         is_sub = bool(o.get("is_sub_row"))
         f_date = str(o.get("full_date") or o.get("date") or "")[:10]
         d_date = str(o.get("dep_date") or o.get("date") or "")[:10]
 
         if f_amt > 0 and f_date:
-            c = _ensure_auto_cell(f_date, adm, pg)
+            c = _ensure_auto_cell(f_date, adm_full, pg)
             c["print_amt"] += f_amt
             if not is_sub:
                 c["print_cust"] += 1
 
         if d_amt > 0 and d_date:
-            c = _ensure_auto_cell(d_date, adm, pg)
+            c = _ensure_auto_cell(d_date, adm_dep, pg)
             c["dep_amt"] += d_amt
             if not is_sub:
                 c["dep_cust"] += 1
