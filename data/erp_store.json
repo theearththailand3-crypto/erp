@@ -1,0 +1,287 @@
+{
+  "manual_incomes": [],
+  "expenses": [],
+  "stock_items": [
+    {
+      "id": "stk-pp-gloss",
+      "code": "STK-001",
+      "name": "สติ๊กเกอร์ PP ขาวเงา (A3+)",
+      "category": "สติ๊กเกอร์",
+      "material_match": [
+        "ขาวเงา"
+      ],
+      "unit": "แผ่น",
+      "initial_qty": 50000,
+      "min_qty": 3000,
+      "cost_per_unit": 4.5,
+      "note": "เนื้อหลักของร้าน (กันน้ำ 100%)"
+    },
+    {
+      "id": "stk-pp-clear",
+      "code": "STK-002",
+      "name": "สติ๊กเกอร์ PP ใส (A3+)",
+      "category": "สติ๊กเกอร์",
+      "material_match": [
+        "ใส"
+      ],
+      "unit": "แผ่น",
+      "initial_qty": 5000,
+      "min_qty": 500,
+      "cost_per_unit": 5.0,
+      "note": "สติ๊กเกอร์ใสกันน้ำ"
+    },
+    {
+      "id": "stk-pp-matte",
+      "code": "STK-003",
+      "name": "สติ๊กเกอร์ PP ขาวด้าน (A3+)",
+      "category": "สติ๊กเกอร์",
+      "material_match": [
+        "ขาวด้าน"
+      ],
+      "unit": "แผ่น",
+      "initial_qty": 3000,
+      "min_qty": 400,
+      "cost_per_unit": 4.8,
+      "note": "สติ๊กเกอร์ขาวด้านกันน้ำ"
+    },
+    {
+      "id": "stk-pvc-gloss",
+      "code": "STK-004",
+      "name": "สติ๊กเกอร์ PVC ขาวเงา (A3+)",
+      "category": "สติ๊กเกอร์",
+      "material_match": [
+        "PVC ขาวเงา"
+      ],
+      "unit": "แผ่น",
+      "initial_qty": 2500,
+      "min_qty": 300,
+      "cost_per_unit": 6.5,
+      "note": "เนื้อ PVC ยืดหยุ่นสูง"
+    },
+    {
+      "id": "stk-pvc-matte",
+      "code": "STK-005",
+      "name": "สติ๊กเกอร์ PVC ขาวด้าน (A3+)",
+      "category": "สติ๊กเกอร์",
+      "material_match": [
+        "PVC ขาวด้าน"
+      ],
+      "unit": "แผ่น",
+      "initial_qty": 1500,
+      "min_qty": 200,
+      "cost_per_unit": 6.8,
+      "note": "เนื้อ PVC ขาวด้าน"
+    },
+    {
+      "id": "stk-pvc-clear",
+      "code": "STK-006",
+      "name": "สติ๊กเกอร์ PVC ใส (A3+)",
+      "category": "สติ๊กเกอร์",
+      "material_match": [
+        "PVC ใส"
+      ],
+      "unit": "แผ่น",
+      "initial_qty": 1500,
+      "min_qty": 200,
+      "cost_per_unit": 6.8,
+      "note": "เนื้อ PVC ใส"
+    },
+    {
+      "id": "stk-art-paper",
+      "code": "STK-007",
+      "name": "สติ๊กเกอร์กระดาษอาร์ต (A3+)",
+      "category": "สติ๊กเกอร์",
+      "material_match": [
+        "กระดาษอาร์ต",
+        "กระดาษ"
+      ],
+      "unit": "แผ่น",
+      "initial_qty": 2000,
+      "min_qty": 300,
+      "cost_per_unit": 2.8,
+      "note": "สติ๊กเกอร์กระดาษ"
+    },
+    {
+      "id": "stk-vinyl",
+      "code": "STK-008",
+      "name": "สติ๊กเกอร์ไวนิล",
+      "category": "สติ๊กเกอร์",
+      "material_match": [
+        "ไวนิล"
+      ],
+      "unit": "แผ่น",
+      "initial_qty": 500,
+      "min_qty": 100,
+      "cost_per_unit": 12.0,
+      "note": "งานป้าย/ไวนิล"
+    },
+    {
+      "id": "pkg-bag-a3",
+      "code": "PKG-001",
+      "name": "ซองพลาสติกใสใส่สติ๊กเกอร์ A3+",
+      "category": "บรรจุภัณฑ์",
+      "material_match": [
+        "__ORDER_COUNT__"
+      ],
+      "unit": "ใบ",
+      "initial_qty": 5000,
+      "min_qty": 500,
+      "cost_per_unit": 1.5,
+      "note": "ตัดอัตโนมัติ 1 ใบต่อ 1 ออเดอร์จัดส่ง"
+    },
+    {
+      "id": "pkg-board-a3",
+      "code": "PKG-002",
+      "name": "แผ่นกระดาษแข็งดามหลังกันยับ A3+",
+      "category": "บรรจุภัณฑ์",
+      "material_match": [
+        "__ORDER_COUNT__"
+      ],
+      "unit": "แผ่น",
+      "initial_qty": 5000,
+      "min_qty": 500,
+      "cost_per_unit": 3.0,
+      "note": "ตัดอัตโนมัติ 1 แผ่นต่อ 1 ออเดอร์จัดส่ง"
+    },
+    {
+      "id": "pkg-outer-env",
+      "code": "PKG-003",
+      "name": "ซองไปรษณีย์พลาสติกกันน้ำ / กล่องพัสดุ",
+      "category": "บรรจุภัณฑ์",
+      "material_match": [
+        "__ORDER_COUNT__"
+      ],
+      "unit": "ชิ้น",
+      "initial_qty": 5000,
+      "min_qty": 500,
+      "cost_per_unit": 2.5,
+      "note": "ตัดอัตโนมัติ 1 ชิ้นต่อ 1 ออเดอร์จัดส่ง"
+    },
+    {
+      "id": "pkg-tape",
+      "code": "PKG-004",
+      "name": "เทปกาวแพ็กพัสดุ",
+      "category": "บรรจุภัณฑ์",
+      "material_match": [],
+      "unit": "ม้วน",
+      "initial_qty": 120,
+      "min_qty": 20,
+      "cost_per_unit": 25.0,
+      "note": "เบิกใช้ตามม้วนจริง"
+    }
+  ],
+  "stock_movements": [],
+  "order_overrides": {},
+  "last_sync_ts": 0.0,
+  "users": [
+    {
+      "id": "usr-owner",
+      "username": "บอส",
+      "password": "Meaw6688.",
+      "display_name": "👑 เจ้าของร้าน (ดู/แก้ไขได้ทุกหน้า)",
+      "tabs": [
+        "overview",
+        "income",
+        "expense",
+        "stock",
+        "customer",
+        "adminboard"
+      ],
+      "can_edit": true,
+      "hide_money": false,
+      "can_manage_users": true
+    },
+    {
+      "id": "usr-stock",
+      "username": "ฝ่ายผลิต",
+      "password": "1653",
+      "display_name": "📦 ฝ่ายผลิต / แพ็กส่ง / เช็คสต๊อก",
+      "tabs": [
+        "stock",
+        "customer"
+      ],
+      "can_edit": true,
+      "hide_money": true,
+      "can_manage_users": false
+    },
+    {
+      "id": "usr-viewer",
+      "username": "พนักงาน",
+      "password": "1653",
+      "display_name": "👀 พนักงาน (ดูอย่างเดียว - View Only)",
+      "tabs": [
+        "stock",
+        "customer"
+      ],
+      "can_edit": false,
+      "hide_money": true,
+      "can_manage_users": false
+    }
+  ],
+  "ad_spend_overrides": {
+    "STprint": {
+      "page": "STprint",
+      "daily_budget": 150.0,
+      "boost_pct": "",
+      "adjusted_budget": 350.0,
+      "boost_date": "2026-10-26",
+      "monthly_total": 0.0
+    },
+    "PLP": {
+      "page": "PLP",
+      "daily_budget": 523.25,
+      "boost_pct": "15%/15%/15%",
+      "adjusted_budget": 794.82,
+      "boost_date": "2026-10-11",
+      "monthly_total": 0.0
+    },
+    "ถูกดีจริง": {
+      "page": "ถูกดีจริง",
+      "daily_budget": 455.4,
+      "boost_pct": "15%/15%/15%",
+      "adjusted_budget": 692.59,
+      "boost_date": "2026-10-11",
+      "monthly_total": 0.0
+    },
+    "โรงงานสติ๊กเกอร์25": {
+      "page": "โรงงานสติ๊กเกอร์25",
+      "daily_budget": 346.45,
+      "boost_pct": "15%",
+      "adjusted_budget": 395.41,
+      "boost_date": "2026-10-11",
+      "monthly_total": 0.0
+    },
+    "ถููกเว้ย25": {
+      "page": "ถููกเว้ย25",
+      "daily_budget": 494.0,
+      "boost_pct": "",
+      "adjusted_budget": 494.0,
+      "boost_date": "",
+      "monthly_total": 0.0
+    },
+    "พิมพ์สวยการพิมพ์": {
+      "page": "พิมพ์สวยการพิมพ์",
+      "daily_budget": 200.0,
+      "boost_pct": "",
+      "adjusted_budget": 200.0,
+      "boost_date": "",
+      "monthly_total": 0.0
+    },
+    "ฉลาก25": {
+      "page": "ฉลาก25",
+      "daily_budget": 150.0,
+      "boost_pct": "",
+      "adjusted_budget": 150.0,
+      "boost_date": "",
+      "monthly_total": 0.0
+    },
+    "ปริ้นฉลาก": {
+      "page": "ปริ้นฉลาก",
+      "daily_budget": 150.0,
+      "boost_pct": "15%/15%",
+      "adjusted_budget": 197.8,
+      "boost_date": "2026-10-11",
+      "monthly_total": 0.0
+    }
+  }
+}
