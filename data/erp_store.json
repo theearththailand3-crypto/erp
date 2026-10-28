@@ -269,9 +269,9 @@
     },
     "ฉลาก25": {
       "page": "ฉลาก25",
-      "daily_budget": 150.0,
+      "daily_budget": 0.0,
       "boost_pct": "",
-      "adjusted_budget": 150.0,
+      "adjusted_budget": 0.0,
       "boost_date": "",
       "monthly_total": 0.0
     },
