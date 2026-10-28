@@ -1098,9 +1098,14 @@ def build_admin_board_state(store: dict[str, Any], orders: list[dict[str, Any]] 
             for p in ADMIN_PAGES
         ]
     ad_overrides = store.get("ad_spend_overrides") or {}
-    active_dates = [d["date"] for d in daily_list if d["total_amt"] > 0]
+    cur_ym = dt.date.today().strftime("%Y-%m")
+    active_dates = [
+        d["date"]
+        for d in daily_list
+        if d["total_amt"] > 0 and str(d.get("date") or "").startswith(cur_ym)
+    ]
     if not active_dates:
-        active_dates = [f"2026-10-{day:02d}" for day in range(1, dt.date.today().day + 1)]
+        active_dates = [f"{cur_ym}-{day:02d}" for day in range(1, dt.date.today().day + 1)]
     seen_ad_pages: set[str] = set()
     for item in ad_spend_list:
         p_key = str(item.get("page") or "").strip()
