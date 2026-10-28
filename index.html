@@ -1744,11 +1744,8 @@
         try {
           let live = null;
           try {
-            const r = await _NATIVE_FETCH('https://api.github.com/repos/theearththailand3-crypto/erp/contents/live.json?t=' + Date.now(), { cache: 'no-store' });
-            if (r.ok) {
-              const j = await r.json();
-              if (j && j.content) live = JSON.parse(atob(j.content.replace(/\s/g, '')));
-            }
+            const r = await _NATIVE_FETCH('https://raw.githubusercontent.com/theearththailand3-crypto/erp/main/live.json?t=' + Date.now(), { cache: 'no-store' });
+            if (r.ok) live = await r.json();
           } catch (e) {}
           if (!live) {
             try {
@@ -1756,9 +1753,9 @@
               if (r2.ok) live = await r2.json();
             } catch (e) {}
           }
-          const candidates = [];
+          const candidates = ['http://127.0.0.1:3580'];
+          if (_LIVE_API_BASE && !candidates.includes(_LIVE_API_BASE)) candidates.push(_LIVE_API_BASE);
           if (live && live.url) candidates.push(live.url.replace(/\/$/, ''));
-          candidates.push('http://127.0.0.1:3580');
           if (live && live.lan) candidates.push(live.lan.replace(/\/$/, ''));
 
           for (const base of candidates) {
