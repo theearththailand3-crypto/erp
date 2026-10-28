@@ -1622,8 +1622,9 @@
       } else if (path === '/api/admin_board/save_ads' && Array.isArray(body.ads)) {
         st.admin_board = st.admin_board || { pages: [], admins: [], daily: [], admin_totals: {}, page_totals: {}, ad_spend: [] };
         const adList = st.admin_board.ad_spend = st.admin_board.ad_spend || [];
-        const activeDates = (st.admin_board.daily || []).filter(d => Number(d.total_amt || 0) > 0).map(d => d.date);
-        const datesForCalc = activeDates.length ? activeDates : Array.from({ length: new Date().getDate() }, (_, i) => `2026-10-${String(i + 1).padStart(2, '0')}`);
+        const curYm = new Date().toISOString().slice(0, 7);
+        const activeDates = (st.admin_board.daily || []).filter(d => Number(d.total_amt || 0) > 0 && String(d.date || '').startsWith(curYm)).map(d => d.date);
+        const datesForCalc = activeDates.length ? activeDates : Array.from({ length: new Date().getDate() }, (_, i) => `${curYm}-${String(i + 1).padStart(2, '0')}`);
         for (const row of body.ads) {
           const pName = String(row.page || '').trim();
           if (!pName) continue;
