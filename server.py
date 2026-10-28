@@ -54,6 +54,7 @@ GSHEET_OCT_GID = "1721963082"
 GSHEET_ADMIN_ID = "1xIo-PlD4j1aPrpK6YRGW50cdWWJpMZGnEO0LCKcjwVY"
 GSHEET_ADMIN_OCT_GID = "1846638698"
 PORT = int(os.environ.get("STPRINT_ERP_PORT", "3580"))
+BKK = dt.timezone(dt.timedelta(hours=7))
 
 ADMIN_PAGES = [
     "STprint",
@@ -372,11 +373,13 @@ def _load_store() -> dict[str, Any]:
         "users": DEFAULT_USERS,
         "last_sync_ts": 0.0,
     }
-    if not STORE_PATH.exists():
+    alt_store = DATA_DIR / "store.json"
+    target_path = STORE_PATH if STORE_PATH.exists() else (alt_store if alt_store.exists() else None)
+    if target_path is None:
         _save_store(default_store)
         return default_store
     try:
-        data = json.loads(STORE_PATH.read_text(encoding="utf-8"))
+        data = json.loads(target_path.read_text(encoding="utf-8"))
         for k, v in default_store.items():
             if k not in data:
                 data[k] = v
@@ -1081,16 +1084,36 @@ def build_admin_board_state(store: dict[str, Any], orders: list[dict[str, Any]] 
             "by_page": by_page,
         })
 
-    ad_spend_list = list(raw.get("ad_spend") or [])
+    ad_spend_list = [dict(x) for x in (raw.get("ad_spend") or [])]
+    if not ad_spend_list:
+        ad_spend_list = [
+            {
+                "page": p,
+                "daily_budget": 0.0,
+                "boost_pct": "",
+                "adjusted_budget": 0.0,
+                "boost_date": "",
+                "monthly_total": 0.0,
+            }
+            for p in ADMIN_PAGES
+        ]
     ad_overrides = store.get("ad_spend_overrides") or {}
     active_dates = [d["date"] for d in daily_list if d["total_amt"] > 0]
     if not active_dates:
         active_dates = [f"2026-10-{day:02d}" for day in range(1, dt.date.today().day + 1)]
+    seen_ad_pages: set[str] = set()
     for item in ad_spend_list:
-        ov = ad_overrides.get(item["page"])
+        p_key = str(item.get("page") or "").strip()
+        seen_ad_pages.add(p_key)
+        ov = ad_overrides.get(p_key)
+        if not ov and p_key == "พิมพ์สวยการพิมพ์":
+            ov = ad_overrides.get("พิมพ์สวย")
+        elif not ov and p_key == "พิมพ์สวย":
+            ov = ad_overrides.get("พิมพ์สวยการพิมพ์")
         if ov:
             item.update(ov)
-        if not item.get("monthly_total"):
+            item["page"] = p_key
+        if ov or not item.get("monthly_total"):
             base_b = float(item.get("daily_budget") or 0.0)
             adj_b = float(item.get("adjusted_budget") or base_b)
             b_date = str(item.get("boost_date") or "").strip()
@@ -1101,6 +1124,18 @@ def build_admin_board_state(store: dict[str, Any], orders: list[dict[str, Any]] 
                 else:
                     tot_ad += base_b
             item["monthly_total"] = round(tot_ad, 2)
+    for p_key, ov in ad_overrides.items():
+        if p_key not in seen_ad_pages and not (
+            p_key in ("พิมพ์สวย", "พิมพ์สวยการพิมพ์")
+            and ("พิมพ์สวย" in seen_ad_pages or "พิมพ์สวยการพิมพ์" in seen_ad_pages)
+        ):
+            item = dict(ov)
+            base_b = float(item.get("daily_budget") or 0.0)
+            adj_b = float(item.get("adjusted_budget") or base_b)
+            b_date = str(item.get("boost_date") or "").strip()
+            tot_ad = sum(adj_b if (b_date and d_s >= b_date) else base_b for d_s in active_dates)
+            item["monthly_total"] = round(tot_ad, 2)
+            ad_spend_list.append(item)
 
     return {
         "synced_at": raw.get("synced_at") or "",
@@ -2196,7 +2231,9 @@ def _publish_cloud_state() -> None:
         (DATA_DIR / "cloud_state.b64").write_text(b64_str, encoding="ascii")
         _github_put_file("cloud_state.b64", b64_str.encode("ascii"), "Sync cloud_state.b64")
         if STORE_PATH.exists():
-            _github_put_file("data/store.json", STORE_PATH.read_bytes(), "Sync data/store.json")
+            store_bytes = STORE_PATH.read_bytes()
+            _github_put_file("data/erp_store.json", store_bytes, "Sync data/erp_store.json")
+            _github_put_file("data/store.json", store_bytes, "Sync data/store.json")
     except Exception:
         pass
     finally:
@@ -2216,9 +2253,14 @@ def _publish_permanent_gateway(tunnel_url: str) -> None:
             "lan": f"http://{_get_lan_ip()}:{PORT}",
             "updated_at": dt.datetime.now(BKK).isoformat(),
         }
+        raw_bytes = json.dumps(payload, indent=2).encode("utf-8")
+        try:
+            (BASE_DIR / "live.json").write_bytes(raw_bytes)
+        except Exception:
+            pass
         _github_put_file(
             "live.json",
-            json.dumps(payload, indent=2).encode("utf-8"),
+            raw_bytes,
             f"Auto-update live ERP tunnel: {tunnel_url}",
         )
     except Exception:
