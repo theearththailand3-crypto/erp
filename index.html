@@ -1494,7 +1494,7 @@
         const eid = body.id || ('exp-' + Date.now());
         const amt = Number(body.amount || 0);
         const status = body.status || 'paid';
-        const paid = status === 'paid' ? amt : Number(body.paid_amount || 0);
+        const paid = status === 'paid' ? amt : (status === 'creditor' ? 0 : Number(body.paid_amount || 0));
         const rec = {
           id: eid,
           date: body.date || new Date().toISOString().slice(0, 10),
@@ -1505,7 +1505,7 @@
           status: status,
           amount: amt,
           paid_amount: paid,
-          Method: body.method || 'โอนเงิน',
+          payment_method: body.payment_method || body.method || 'โอนเงิน',
           note: body.note || ''
         };
         const idx = (st.expenses || []).findIndex(x => x.id === eid);
@@ -1536,6 +1536,40 @@
         });
       } else if (path === '/api/income/delete') {
         st.incomes = (st.incomes || []).filter(x => x.id !== body.id);
+      } else if (path === '/api/stock/item/save') {
+        st.stock_items = st.stock_items || [];
+        const iid = body.id || ('stk-' + Date.now());
+        const existing = st.stock_items.find(x => x.id === iid);
+        const initQty = Number(body.initial_qty || 0);
+        const minQty = Number(body.min_qty || 0);
+        const autoUsed = existing ? Number(existing.auto_used_from_orders || 0) : 0;
+        const mvIn = existing ? Number(existing.stock_in_added || 0) : 0;
+        const mvOut = existing ? Number(existing.manual_out || 0) : 0;
+        const remain = initQty + mvIn - autoUsed - mvOut;
+        const rec = {
+          id: iid,
+          code: body.code || 'STK-NEW',
+          name: body.name || '',
+          category: body.category || 'สติ๊กเกอร์',
+          material_match: existing ? (existing.material_match || []) : (body.material_key ? [String(body.material_key).trim()] : []),
+          unit: body.unit || 'แผ่น',
+          initial_qty: initQty,
+          min_qty: minQty,
+          cost_per_unit: existing ? Number(existing.cost_per_unit || 0) : 0,
+          note: body.note || '',
+          stock_in_added: mvIn,
+          manual_out: mvOut,
+          auto_used_from_orders: autoUsed,
+          total_used: autoUsed + mvOut,
+          remaining_qty: remain,
+          low_stock: remain <= minQty
+        };
+        if (existing) {
+          const idx = st.stock_items.indexOf(existing);
+          st.stock_items[idx] = rec;
+        } else {
+          st.stock_items.push(rec);
+        }
       } else if (path === '/api/stock/movement') {
         const item = (st.stock_items || []).find(x => x.id === body.item_id);
         const qty = Number(body.qty || 0);
@@ -1543,25 +1577,135 @@
         (st.stock_movements = st.stock_movements || []).unshift({
           id: 'mv-' + Date.now(),
           ts: new Date().toISOString().replace('T', ' ').slice(0, 16),
+          date: body.date || new Date().toISOString().slice(0, 10),
           item_id: body.item_id,
           item_name: item ? item.name : body.item_id,
           type: mtype,
-          qty: qty,
-          note: body.note || ''
+          qty: mtype === 'set_balance' ? 0 : qty,
+          note: mtype === 'set_balance'
+            ? `ตั้งยอดคงเหลือจริงตามนับสต๊อก = ${qty.toLocaleString('th-TH')} ${item ? item.unit : ''} ${body.note ? '(' + body.note + ')' : ''}`.trim()
+            : (body.note || '')
         });
         if (item) {
-          if (mtype === 'in') item.remaining_qty = Number(item.remaining_qty || 0) + qty;
-          else if (mtype === 'out') item.remaining_qty = Number(item.remaining_qty || 0) - qty;
-          else if (mtype === 'set_balance') item.remaining_qty = qty;
+          if (mtype === 'in') {
+            item.stock_in_added = Number(item.stock_in_added || 0) + qty;
+            item.remaining_qty = Number(item.remaining_qty || 0) + qty;
+          } else if (mtype === 'out') {
+            item.manual_out = Number(item.manual_out || 0) + qty;
+            item.total_used = Number(item.auto_used_from_orders || 0) + item.manual_out;
+            item.remaining_qty = Number(item.remaining_qty || 0) - qty;
+          } else if (mtype === 'set_balance') {
+            const autoU = Number(item.auto_used_from_orders || 0);
+            const mvIn = Number(item.stock_in_added || 0);
+            const mvOut = Number(item.manual_out || 0);
+            item.initial_qty = qty + autoU + mvOut - mvIn;
+            item.remaining_qty = qty;
+          }
+          item.low_stock = Number(item.remaining_qty || 0) <= Number(item.min_qty || 0);
         }
       } else if (path === '/api/order/update') {
-        const ord = (st.orders || []).find(x => x.id === body.id);
-        if (ord) {
-          if (body.ship_status !== undefined) ord.ship_status = body.ship_status;
+        const updateOrd = (ord) => {
+          if (!ord) return;
+          if (body.shipping_status !== undefined) ord.shipping_status = body.shipping_status;
+          if (body.ship_status !== undefined) ord.shipping_status = body.ship_status;
           if (body.carrier !== undefined) ord.carrier = body.carrier;
           if (body.tracking_no !== undefined) ord.tracking_no = body.tracking_no;
-          if (body.ship_note !== undefined) ord.ship_note = body.ship_note;
+          if (body.admin_note !== undefined) ord.admin_note = body.admin_note;
+          if (body.ship_note !== undefined) ord.admin_note = body.ship_note;
+          if (body.prep_status_override) ord.prep_status_code = body.prep_status_override;
+          if (body.prep_status_label) ord.prep_status_label = body.prep_status_label;
+        };
+        updateOrd((st.orders || []).find(x => x.id === body.id));
+        for (const c of (st.customers || [])) {
+          updateOrd((c.orders || []).find(x => x.id === body.id));
         }
+      } else if (path === '/api/admin_board/save_ads' && Array.isArray(body.ads)) {
+        st.admin_board = st.admin_board || { pages: [], admins: [], daily: [], admin_totals: {}, page_totals: {}, ad_spend: [] };
+        const adList = st.admin_board.ad_spend = st.admin_board.ad_spend || [];
+        const activeDates = (st.admin_board.daily || []).filter(d => Number(d.total_amt || 0) > 0).map(d => d.date);
+        const datesForCalc = activeDates.length ? activeDates : Array.from({ length: new Date().getDate() }, (_, i) => `2026-10-${String(i + 1).padStart(2, '0')}`);
+        for (const row of body.ads) {
+          const pName = String(row.page || '').trim();
+          if (!pName) continue;
+          const dailyB = Number(row.daily_budget || 0);
+          const boostPct = String(row.boost_pct || '').trim();
+          const adjB = Number(row.adjusted_budget || dailyB);
+          const boostDate = String(row.boost_date || '').trim();
+          let monthlyTot = 0;
+          for (const dStr of datesForCalc) {
+            monthlyTot += (boostDate && dStr >= boostDate) ? adjB : dailyB;
+          }
+          monthlyTot = Math.round(monthlyTot * 100) / 100;
+          let target = adList.find(x => x.page === pName || (pName === 'พิมพ์สวย' && x.page === 'พิมพ์สวยการพิมพ์') || (pName === 'พิมพ์สวยการพิมพ์' && x.page === 'พิมพ์สวย'));
+          if (target) {
+            target.daily_budget = dailyB;
+            target.boost_pct = boostPct;
+            target.adjusted_budget = adjB;
+            target.boost_date = boostDate;
+            target.monthly_total = monthlyTot;
+          } else {
+            adList.push({
+              page: pName,
+              daily_budget: dailyB,
+              boost_pct: boostPct,
+              adjusted_budget: adjB,
+              boost_date: boostDate,
+              monthly_total: monthlyTot
+            });
+          }
+        }
+      } else if (path === '/api/admin_board/save_day' && body.date && body.admin && body.pages) {
+        st.admin_board = st.admin_board || { pages: ['STprint', 'PLP', 'โรงงานสติ๊กเกอร์25', 'ถูกดีจริง', 'ถูกเว้ย25', 'ฉลาก25', 'พิมพ์สวย', 'ปริ้นฉลาก'], admins: ['จูน', 'เอม', 'ปอนด์', 'มาย'], daily: [], admin_totals: {}, page_totals: {}, ad_spend: [] };
+        const board = st.admin_board;
+        const pages = board.pages || ['STprint', 'PLP', 'โรงงานสติ๊กเกอร์25', 'ถูกดีจริง', 'ถูกเว้ย25', 'ฉลาก25', 'พิมพ์สวย', 'ปริ้นฉลาก'];
+        const admins = board.admins || ['จูน', 'เอม', 'ปอนด์', 'มาย'];
+        let dayObj = (board.daily || []).find(d => d.date === body.date);
+        if (!dayObj) {
+          dayObj = { date: body.date, print_amt: 0, print_cust: 0, dep_amt: 0, dep_cust: 0, total_amt: 0, open: 0, close: 0, high: 0, low: 0, bullish: true, by_admin: {}, by_page: {} };
+          (board.daily = board.daily || []).push(dayObj);
+          board.daily.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+        }
+        dayObj.by_admin = dayObj.by_admin || {};
+        const admRec = dayObj.by_admin[body.admin] = dayObj.by_admin[body.admin] || { print_amt: 0, print_cust: 0, dep_amt: 0, dep_cust: 0, total_amt: 0, pages: {} };
+        admRec.pages = admRec.pages || {};
+        for (const [pName, vals] of Object.entries(body.pages)) {
+          admRec.pages[pName] = {
+            print_amt: Number(vals.print_amt || 0),
+            print_cust: Number(vals.print_cust || 0),
+            dep_amt: Number(vals.dep_amt || 0),
+            dep_cust: Number(vals.dep_cust || 0)
+          };
+        }
+        let dPrint = 0, dDep = 0, dPrintCust = 0, dDepCust = 0;
+        dayObj.by_page = {};
+        pages.forEach(p => { dayObj.by_page[p] = { print_amt: 0, print_cust: 0, dep_amt: 0, dep_cust: 0, total_amt: 0 }; });
+        admins.forEach(a => {
+          const ar = dayObj.by_admin[a] = dayObj.by_admin[a] || { print_amt: 0, print_cust: 0, dep_amt: 0, dep_cust: 0, total_amt: 0, pages: {} };
+          const pMap = ar.pages || {};
+          let ap = 0, apc = 0, ad = 0, adc = 0;
+          pages.forEach(p => {
+            const cv = pMap[p] || {};
+            const pa = Number(cv.print_amt || 0);
+            const pc = Number(cv.print_cust || 0);
+            const da = Number(cv.dep_amt || 0);
+            const dc = Number(cv.dep_cust || 0);
+            ap += pa; apc += pc; ad += da; adc += dc;
+            dayObj.by_page[p].print_amt += pa;
+            dayObj.by_page[p].print_cust += pc;
+            dayObj.by_page[p].dep_amt += da;
+            dayObj.by_page[p].dep_cust += dc;
+            dayObj.by_page[p].total_amt += pa + da;
+          });
+          ar.print_amt = ap; ar.print_cust = apc; ar.dep_amt = ad; ar.dep_cust = adc; ar.total_amt = ap + ad;
+          dPrint += ap; dDep += ad; dPrintCust += apc; dDepCust += adc;
+        });
+        dayObj.print_amt = dPrint;
+        dayObj.dep_amt = dDep;
+        dayObj.print_cust = dPrintCust;
+        dayObj.dep_cust = dDepCust;
+        dayObj.total_amt = dPrint + dDep;
+        dayObj.close = dayObj.total_amt;
+        dayObj.high = Math.max(dayObj.open || dayObj.close, dayObj.close) + dDep;
       }
     }
 
@@ -1592,49 +1736,68 @@
       return st;
     }
 
+    let _PROBE_PROMISE = null;
     async function _probeLiveTunnel() {
-      try {
-        let live = null;
+      if (_PROBE_PROMISE) return _PROBE_PROMISE;
+      _PROBE_PROMISE = (async () => {
         try {
-          const r = await _NATIVE_FETCH('https://api.github.com/repos/theearththailand3-crypto/erp/contents/live.json?t=' + Date.now(), { cache: 'no-store' });
-          if (r.ok) {
-            const j = await r.json();
-            if (j && j.content) live = JSON.parse(atob(j.content.replace(/\s/g, '')));
+          let live = null;
+          try {
+            const r = await _NATIVE_FETCH('https://api.github.com/repos/theearththailand3-crypto/erp/contents/live.json?t=' + Date.now(), { cache: 'no-store' });
+            if (r.ok) {
+              const j = await r.json();
+              if (j && j.content) live = JSON.parse(atob(j.content.replace(/\s/g, '')));
+            }
+          } catch (e) {}
+          if (!live) {
+            try {
+              const r2 = await _NATIVE_FETCH('./live.json?t=' + Date.now(), { cache: 'no-store' });
+              if (r2.ok) live = await r2.json();
+            } catch (e) {}
+          }
+          const candidates = [];
+          if (live && live.url) candidates.push(live.url.replace(/\/$/, ''));
+          candidates.push('http://127.0.0.1:3580');
+          if (live && live.lan) candidates.push(live.lan.replace(/\/$/, ''));
+
+          for (const base of candidates) {
+            if (!base) continue;
+            try {
+              const ctrl = new AbortController();
+              const timer = setTimeout(() => ctrl.abort(), 2200);
+              const pr = await _NATIVE_FETCH(base + '/api/ping', { signal: ctrl.signal, cache: 'no-store' });
+              clearTimeout(timer);
+              if (pr.ok) {
+                const wasCloud = _CLOUD_MODE_ACTIVE || !_LIVE_API_BASE;
+                _LIVE_API_BASE = base;
+                _CLOUD_MODE_ACTIVE = false;
+                const q = _getOfflineQueue();
+                if (q.length) {
+                  _saveOfflineQueue([]);
+                  for (const item of q) {
+                    try {
+                      await _NATIVE_FETCH(_LIVE_API_BASE + item.path, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(item.body || {})
+                      });
+                    } catch (e) {}
+                  }
+                }
+                if (wasCloud && STATE && STATE.synced_at) {
+                  const el = document.getElementById('syncStatusText');
+                  if (el) el.textContent = `✅ ซิงก์ชีตล่าสุด: ${STATE.synced_at || '-'} • 🟢 เชื่อมเซิร์ฟเวอร์ + Cloud 24 ชม.`;
+                }
+                return true;
+              }
+            } catch (e) {}
           }
         } catch (e) {}
-        if (!live) {
-          const r2 = await _NATIVE_FETCH('./live.json?t=' + Date.now(), { cache: 'no-store' });
-          if (r2.ok) live = await r2.json();
-        }
-        if (live && live.url) {
-          const base = live.url.replace(/\/$/, '');
-          const ctrl = new AbortController();
-          const timer = setTimeout(() => ctrl.abort(), 2500);
-          const pr = await _NATIVE_FETCH(base + '/api/ping', { signal: ctrl.signal, cache: 'no-store' });
-          clearTimeout(timer);
-          if (pr.ok) {
-            _LIVE_API_BASE = base;
-            _CLOUD_MODE_ACTIVE = false;
-            const q = _getOfflineQueue();
-            if (q.length) {
-              _saveOfflineQueue([]);
-              for (const item of q) {
-                try {
-                  await _NATIVE_FETCH(_LIVE_API_BASE + item.path, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(item.body || {})
-                  });
-                } catch (e) {}
-              }
-            }
-            return true;
-          }
-        }
-      } catch (e) {}
-      _LIVE_API_BASE = '';
-      _CLOUD_MODE_ACTIVE = true;
-      return false;
+        _LIVE_API_BASE = '';
+        _CLOUD_MODE_ACTIVE = true;
+        return false;
+      })().finally(() => { _PROBE_PROMISE = null; });
+      return _PROBE_PROMISE;
     }
 
     if (_IS_CLOUD_HOST) {
@@ -2107,6 +2270,9 @@
 
     async function loadState() {
       try {
+        if (_IS_CLOUD_HOST && !_LIVE_API_BASE) {
+          await _probeLiveTunnel();
+        }
         const r = await fetch('/api/state');
         STATE = await r.json();
         if (!STATE.users || !STATE.users.length) {
@@ -4004,30 +4170,68 @@
       }
     }
 
+    function onAdSpendRowInput(el, isManualAdj) {
+      const tr = el && el.closest ? el.closest('tr') : null;
+      if (!tr) return;
+      const dailyInput = tr.querySelector('.ad-in-daily');
+      const boostInput = tr.querySelector('.ad-in-boost');
+      const adjInput = tr.querySelector('.ad-in-adj');
+      if (!dailyInput || !boostInput || !adjInput) return;
+      if (isManualAdj) {
+        adjInput.setAttribute('data-manual-adj', '1');
+        return;
+      }
+      const daily = parseFloat(dailyInput.value || '0') || 0;
+      const boostRaw = (boostInput.value || '').trim();
+      const pctMatches = boostRaw.match(/-?\d+(?:\.\d+)?/g);
+      if (pctMatches && pctMatches.length > 0) {
+        let calc = daily;
+        for (const pStr of pctMatches) {
+          const pct = parseFloat(pStr);
+          if (!isNaN(pct)) calc *= (1 + pct / 100);
+        }
+        adjInput.value = (Math.round(calc * 100) / 100).toString();
+        adjInput.removeAttribute('data-manual-adj');
+      } else if (adjInput.getAttribute('data-manual-adj') !== '1') {
+        adjInput.value = daily.toString();
+      }
+    }
+
     function openAdSpendModal() {
       if (!canUserEdit()) { alert('บัญชีของคุณเป็นสิทธิ์ดูอย่างเดียว (View Only) ไม่สามารถแก้ไขงบแอดได้ครับ'); return; }
       const board = STATE.admin_board || {};
-      const ads = board.ad_spend || [];
-      document.getElementById('adSpendFormBody').innerHTML = ads.map(a => `
-        <tr data-page="${esc(a.page)}">
-          <td><strong>${esc(a.page)}</strong></td>
-          <td><input type="number" class="ad-in-daily" value="${a.daily_budget || 0}" step="0.01" style="width:100%;max-width:120px;min-width:0;padding:5px;" /></td>
-          <td><input type="text" class="ad-in-boost" value="${esc(a.boost_pct || '')}" placeholder="เช่น 15%/15%" style="width:100%;max-width:130px;min-width:0;padding:5px;" /></td>
-          <td><input type="number" class="ad-in-adj" value="${a.adjusted_budget || a.daily_budget || 0}" step="0.01" style="width:100%;max-width:130px;min-width:0;padding:5px;" /></td>
-          <td><input type="date" class="ad-in-date" value="${esc(a.boost_date || '')}" style="width:100%;min-width:0;padding:5px;" /></td>
-        </tr>
-      `).join('');
+      const ads = (board.ad_spend && board.ad_spend.length)
+        ? board.ad_spend
+        : ['STprint', 'PLP', 'ถูกดีจริง', 'โรงงานสติ๊กเกอร์25', 'ถูกเว้ย25', 'พิมพ์สวยการพิมพ์', 'ฉลาก25', 'ปริ้นฉลาก'].map(p => ({
+            page: p, daily_budget: 0, boost_pct: '', adjusted_budget: 0, boost_date: ''
+          }));
+      document.getElementById('adSpendFormBody').innerHTML = ads.map(a => {
+        const daily = Number(a.daily_budget || 0);
+        const adj = Number(a.adjusted_budget || a.daily_budget || 0);
+        const hasManualDiff = !a.boost_pct && adj !== daily ? ' data-manual-adj="1"' : '';
+        return `
+          <tr data-page="${esc(a.page)}">
+            <td><strong>${esc(a.page)}</strong></td>
+            <td><input type="number" class="ad-in-daily" value="${daily}" step="0.01" oninput="onAdSpendRowInput(this, false)" style="width:100%;max-width:120px;min-width:0;padding:5px;" /></td>
+            <td><input type="text" class="ad-in-boost" value="${esc(a.boost_pct || '')}" placeholder="เช่น 15%/15%" oninput="onAdSpendRowInput(this, false)" style="width:100%;max-width:130px;min-width:0;padding:5px;" /></td>
+            <td><input type="number" class="ad-in-adj" value="${adj}" step="0.01"${hasManualDiff} oninput="onAdSpendRowInput(this, true)" style="width:100%;max-width:130px;min-width:0;padding:5px;" /></td>
+            <td><input type="date" class="ad-in-date" value="${esc(a.boost_date || '')}" style="width:100%;min-width:0;padding:5px;" /></td>
+          </tr>
+        `;
+      }).join('');
       document.getElementById('modalAdSpend').classList.add('open');
     }
 
     async function saveAdSpend() {
       const ads = [];
       document.querySelectorAll('#adSpendFormBody tr').forEach(tr => {
+        const daily = parseFloat(tr.querySelector('.ad-in-daily').value || '0') || 0;
+        const adjRaw = parseFloat(tr.querySelector('.ad-in-adj').value || '');
         ads.push({
           page: tr.getAttribute('data-page'),
-          daily_budget: parseFloat(tr.querySelector('.ad-in-daily').value || '0'),
+          daily_budget: daily,
           boost_pct: tr.querySelector('.ad-in-boost').value.trim(),
-          adjusted_budget: parseFloat(tr.querySelector('.ad-in-adj').value || '0'),
+          adjusted_budget: !isNaN(adjRaw) && adjRaw > 0 ? adjRaw : daily,
           boost_date: tr.querySelector('.ad-in-date').value,
         });
       });
