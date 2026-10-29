@@ -230,17 +230,17 @@
     "PLP": {
       "page": "PLP",
       "daily_budget": 523.25,
-      "boost_pct": "15%/15%/15%",
-      "adjusted_budget": 794.82,
-      "boost_date": "2026-10-11",
+      "boost_pct": "15%/15%/15%10%",
+      "adjusted_budget": 875.38,
+      "boost_date": "2026-10-29",
       "monthly_total": 0.0
     },
     "ถูกดีจริง": {
       "page": "ถูกดีจริง",
       "daily_budget": 455.4,
-      "boost_pct": "15%/15%/15%",
-      "adjusted_budget": 692.59,
-      "boost_date": "2026-10-11",
+      "boost_pct": "15%/15%/15%10%",
+      "adjusted_budget": 761.87,
+      "boost_date": "2026-10-29",
       "monthly_total": 0.0
     },
     "โรงงานสติ๊กเกอร์25": {
