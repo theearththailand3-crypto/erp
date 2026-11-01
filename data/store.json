@@ -230,7 +230,7 @@
     "PLP": {
       "page": "PLP",
       "daily_budget": 875.38,
-      "boost_pct": "",
+      "boost_pct": "10",
       "adjusted_budget": 960.0,
       "boost_date": "2026-11-01",
       "monthly_total": 0.0
