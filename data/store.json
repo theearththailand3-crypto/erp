@@ -221,32 +221,32 @@
   "ad_spend_overrides": {
     "STprint": {
       "page": "STprint",
-      "daily_budget": 150.0,
+      "daily_budget": 320.0,
       "boost_pct": "",
-      "adjusted_budget": 350.0,
-      "boost_date": "2026-10-26",
+      "adjusted_budget": 320.0,
+      "boost_date": "2026-11-01",
       "monthly_total": 0.0
     },
     "PLP": {
       "page": "PLP",
-      "daily_budget": 523.25,
-      "boost_pct": "15%/15%/15%10%",
-      "adjusted_budget": 875.38,
-      "boost_date": "2026-10-29",
+      "daily_budget": 875.38,
+      "boost_pct": "",
+      "adjusted_budget": 960.0,
+      "boost_date": "2026-11-01",
       "monthly_total": 0.0
     },
     "ถูกดีจริง": {
       "page": "ถูกดีจริง",
-      "daily_budget": 455.4,
-      "boost_pct": "15%/15%/15%10%",
+      "daily_budget": 761.87,
+      "boost_pct": "",
       "adjusted_budget": 761.87,
       "boost_date": "2026-10-29",
       "monthly_total": 0.0
     },
     "โรงงานสติ๊กเกอร์25": {
       "page": "โรงงานสติ๊กเกอร์25",
-      "daily_budget": 346.45,
-      "boost_pct": "15%",
+      "daily_budget": 395.41,
+      "boost_pct": "",
       "adjusted_budget": 395.41,
       "boost_date": "2026-10-11",
       "monthly_total": 0.0
@@ -277,9 +277,9 @@
     },
     "ปริ้นฉลาก": {
       "page": "ปริ้นฉลาก",
-      "daily_budget": 150.0,
-      "boost_pct": "15%/15%",
-      "adjusted_budget": 197.8,
+      "daily_budget": 170.0,
+      "boost_pct": "",
+      "adjusted_budget": 170.0,
       "boost_date": "2026-10-11",
       "monthly_total": 0.0
     }
