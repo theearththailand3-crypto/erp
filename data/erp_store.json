@@ -261,9 +261,9 @@
     },
     "พิมพ์สวยการพิมพ์": {
       "page": "พิมพ์สวยการพิมพ์",
-      "daily_budget": 200.0,
+      "daily_budget": 0.0,
       "boost_pct": "",
-      "adjusted_budget": 200.0,
+      "adjusted_budget": 0.0,
       "boost_date": "",
       "monthly_total": 0.0
     },
