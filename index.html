@@ -565,7 +565,7 @@
       <span class="sync-badge" id="syncStatusText">🔄 กำลังโหลดข้อมูล...</span>
       <button class="btn btn-success hide-on-mobile" id="btnMobileQr" onclick="openMobileModal()">📱 เปิดดูในมือถือ (QR Code)</button>
       <button class="btn btn-primary" id="btnSyncOct" onclick="syncSheet(false)">🔄 ซิงก์ชีตล่าสุด</button>
-      <button class="btn btn-outline hide-on-mobile" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.25);" id="btnSyncAll" onclick="syncSheet(true)">📚 ดึงทุกเดือน (ม.ค.-ต.ค.)</button>
+      <button class="btn btn-outline hide-on-mobile" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.25);" id="btnSyncAll" onclick="syncSheet(true)">📚 ดึงทุกเดือน (ม.ค.-พ.ย.)</button>
       <button class="btn btn-outline btn-sm" style="background:rgba(239,68,68,0.18);color:#fecaca;border-color:rgba(248,113,113,0.4);" onclick="logoutUser()">🚪 ออก</button>
     </div>
   </div>
@@ -586,7 +586,7 @@
       <button class="preset-btn" onclick="setDatePreset('today', this)">วันนี้</button>
       <button class="preset-btn" onclick="setDatePreset('yesterday', this)">เมื่อวาน</button>
       <button class="preset-btn" onclick="setDatePreset('7days', this)">7 วันล่าสุด</button>
-      <button class="preset-btn active" onclick="setDatePreset('month', this)">เดือนนี้ (ต.ค.)</button>
+      <button class="preset-btn active" id="btnPresetMonth" onclick="setDatePreset('month', this)">เดือนนี้ (พ.ย.)</button>
       <button class="preset-btn" onclick="setDatePreset('all', this)">ทั้งหมด</button>
       <div class="date-range-inputs">
         <span style="font-size:11.5px;font-weight:600;color:#475569;white-space:nowrap;">เริ่ม:</span>
@@ -954,7 +954,7 @@
       <!-- Daily Table matching Google Sheet gid=1846638698 -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title">📅 ตารางยอดขายรายวันแยกตามแอดมิน & เพจ (เหมือนชีตสรุปแอดมิน ต.ค.26)</div>
+          <div class="card-title" id="adminDailyCardTitle">📅 ตารางยอดขายรายวันแยกตามแอดมิน & เพจ (เหมือนชีตสรุปแอดมิน พ.ย.26)</div>
           <div class="toolbar">
             <select id="adminTableFilter" onchange="renderAdminBoardTab()">
               <option value="ALL">ดูยอดรวมทุกแอดมิน (แยก 8 เพจ)</option>
@@ -2256,6 +2256,15 @@
       const dd = String(now.getDate()).padStart(2, '0');
       document.getElementById('dateFrom').value = `${yyyy}-${mm}-01`;
       document.getElementById('dateTo').value = `${yyyy}-${mm}-${dd}`;
+      const thaiMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+      const curThMonth = thaiMonths[now.getMonth()] || 'พ.ย.';
+      const yrShort = String(yyyy).slice(-2);
+      const btnPresetMonth = document.getElementById('btnPresetMonth');
+      if (btnPresetMonth) btnPresetMonth.textContent = `เดือนนี้ (${curThMonth})`;
+      const btnSyncAll = document.getElementById('btnSyncAll');
+      if (btnSyncAll) btnSyncAll.textContent = `📚 ดึงทุกเดือน (ม.ค.-${curThMonth})`;
+      const adminTitle = document.getElementById('adminDailyCardTitle');
+      if (adminTitle) adminTitle.textContent = `📅 ตารางยอดขายรายวันแยกตามแอดมิน & เพจ (เหมือนชีตสรุปแอดมิน ${curThMonth}${yrShort})`;
     }
 
     function setDatePreset(preset, btn) {
