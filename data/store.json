@@ -185,7 +185,8 @@
         "expense",
         "stock",
         "customer",
-        "adminboard"
+        "adminboard",
+        "company3d"
       ],
       "can_edit": true,
       "hide_money": false,
@@ -198,7 +199,8 @@
       "display_name": "📦 ฝ่ายผลิต / แพ็กส่ง / เช็คสต๊อก",
       "tabs": [
         "stock",
-        "customer"
+        "customer",
+        "expense"
       ],
       "can_edit": true,
       "hide_money": true,
