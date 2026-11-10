@@ -286,6 +286,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-39e0193a",
+      "date": "2026-10-28",
+      "due_date": "2026-10-28",
+      "category": "อื่นๆ",
+      "title": "ค่าเค้กวันเกิด (พนักงาน)",
+      "vendor": "บมจ. เอส แอนด์ พี ชินดิเดท",
+      "amount": 344.0,
+      "paid_amount": 344.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
