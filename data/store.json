@@ -104,6 +104,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-3522bb47",
+      "date": "2026-10-11",
+      "due_date": "2026-10-11",
+      "category": "อื่นๆ",
+      "title": "ค่าคีย์บอร์ด",
+      "vendor": "บริษัท เจ.ไอ.บี. คอมพิวเตอร์ กรุ๊ป จำกัด",
+      "amount": 690.0,
+      "paid_amount": 690.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
