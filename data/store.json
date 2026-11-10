@@ -390,6 +390,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-391a3f74",
+      "date": "2026-10-30",
+      "due_date": "2026-10-30",
+      "category": "ค่าโฆษณาเพจ (Ads)",
+      "title": "ค่าดอกเบี้ย OD",
+      "vendor": "ธนาคารกสิกรไทย",
+      "amount": 5592.24,
+      "paid_amount": 5592.24,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "โอนเช็ค"
     }
   ],
   "stock_items": [
