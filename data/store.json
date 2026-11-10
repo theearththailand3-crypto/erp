@@ -195,6 +195,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-3989c8f2",
+      "date": "2026-10-21",
+      "due_date": "2026-10-21",
+      "category": "ค่าน้ำ/ค่าไฟ/อินเทอร์เน็ต",
+      "title": "ค่าไฟฟ้า 109/36",
+      "vendor": "การไฟฟ้านครหลวง",
+      "amount": 8830.05,
+      "paid_amount": 8830.05,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
