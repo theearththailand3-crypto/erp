@@ -52,6 +52,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": ""
+    },
+    {
+      "id": "exp-4da8ceed",
+      "date": "2026-10-02",
+      "due_date": "2026-10-02",
+      "category": "อื่นๆ",
+      "title": "ค่าปากกาไวท์บอร์ด/แปลงลบกระดาน",
+      "vendor": "ร้านสโนว์บอมบ์",
+      "amount": 65.0,
+      "paid_amount": 65.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
