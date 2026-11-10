@@ -182,6 +182,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-a2982060",
+      "date": "2026-10-21",
+      "due_date": "2026-10-21",
+      "category": "ค่าขนส่ง/พัสดุ",
+      "title": "ค่าจัดส่งเอกสาร (บิลใบเสร็จ)",
+      "vendor": "บริษัท ไปรษณีย์ไทย จำกัด",
+      "amount": 192.0,
+      "paid_amount": 192.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
