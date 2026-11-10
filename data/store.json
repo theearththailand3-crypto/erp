@@ -481,6 +481,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-5e821ebc",
+      "date": "2026-10-31",
+      "due_date": "2026-10-31",
+      "category": "อื่นๆ",
+      "title": "ค่าขยะ",
+      "vendor": "นายอนุชิต เชื้อสุวรรณ",
+      "amount": 500.0,
+      "paid_amount": 500.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
