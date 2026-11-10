@@ -494,6 +494,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-0e33edf7",
+      "date": "2026-11-10",
+      "due_date": "2026-11-11",
+      "category": "ค่าสติ๊กเกอร์/วัตถุดิบ",
+      "title": "เทส",
+      "vendor": "เทส",
+      "amount": 100.0,
+      "paid_amount": 100.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": ""
     }
   ],
   "stock_items": [
