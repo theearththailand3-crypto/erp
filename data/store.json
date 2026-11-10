@@ -143,6 +143,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-fcc8084e",
+      "date": "2026-10-18",
+      "due_date": "2026-10-18",
+      "category": "อื่นๆ",
+      "title": "ค่าอุปกรณ์ของใช้สำนักงาน",
+      "vendor": "MR.D.I.Y",
+      "amount": 406.0,
+      "paid_amount": 406.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
