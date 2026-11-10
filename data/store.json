@@ -39,6 +39,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": ""
+    },
+    {
+      "id": "exp-dac9c918",
+      "date": "2026-10-01",
+      "due_date": "2026-10-01",
+      "category": "อื่นๆ",
+      "title": "ค่าสินเชื่อวงเงินประกันคุ้มครองสินเชื่อ",
+      "vendor": "ธนาคารกสิกรไทย",
+      "amount": 74.07,
+      "paid_amount": 74.07,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": ""
     }
   ],
   "stock_items": [
