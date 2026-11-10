@@ -377,6 +377,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-39b2f610",
+      "date": "2026-10-31",
+      "due_date": "2026-10-31",
+      "category": "ค่าโฆษณาเพจ (Ads)",
+      "title": "ค่าจัดส่งพัสดุ",
+      "vendor": "บริษัท มายออเดอร์ อินเทลลิเจนซ์ จำกัด",
+      "amount": 40437.0,
+      "paid_amount": 40437.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
