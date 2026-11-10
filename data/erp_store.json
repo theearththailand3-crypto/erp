@@ -455,6 +455,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-e2cbb5a2",
+      "date": "2026-10-05",
+      "due_date": "2026-10-05",
+      "category": "อื่นๆ",
+      "title": "ค่าใบมีดไดคัท 3 กล่อง",
+      "vendor": "ร้าน W.P.Shop 17",
+      "amount": 750.0,
+      "paid_amount": 750.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
