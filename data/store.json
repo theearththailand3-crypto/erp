@@ -65,6 +65,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-5ae6fc7c",
+      "date": "2026-10-03",
+      "due_date": "2026-10-03",
+      "category": "ค่าบรรจุภัณฑ์/ซอง/กล่อง",
+      "title": "ค่าซองเอกสาร (สีน้ำตาล)",
+      "vendor": "ห้างหุ้นส่วนจำกัด ย.ยิ่งเจริญ",
+      "amount": 3531.0,
+      "paid_amount": 3531.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
