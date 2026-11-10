@@ -117,6 +117,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-f7799c85",
+      "date": "2026-10-01",
+      "due_date": "2026-10-01",
+      "category": "อื่นๆ",
+      "title": "ค่ามิเตอร์เครื่อง ริโก้",
+      "vendor": "บริษัท ริโ้ก้ (ประเทศไทย) จำกัด",
+      "amount": 36260.95,
+      "paid_amount": 36260.95,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
