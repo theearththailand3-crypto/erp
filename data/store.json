@@ -130,6 +130,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-6a2570d0",
+      "date": "2026-10-16",
+      "due_date": "2026-10-16",
+      "category": "อื่นๆ",
+      "title": "ค่าอาหาร/เครื่องดื่ม (เลี้ยงพนักงาน)",
+      "vendor": "ร้านบ้านตัมชมพู",
+      "amount": 17103.0,
+      "paid_amount": 17103.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
