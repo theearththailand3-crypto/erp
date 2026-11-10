@@ -260,6 +260,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-7d7aa87b",
+      "date": "2026-10-22",
+      "due_date": "2026-10-22",
+      "category": "อื่นๆ",
+      "title": "ค่าโบวชัวร์ 200 ใบ",
+      "vendor": "บริษัท เหรียญทองเทคโนโลยี การพิมพ์ จำกัด",
+      "amount": 513.6,
+      "paid_amount": 513.6,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
