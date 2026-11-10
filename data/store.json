@@ -1,6 +1,20 @@
 {
   "manual_incomes": [],
-  "expenses": [],
+  "expenses": [
+    {
+      "id": "exp-f9c186dd",
+      "date": "2026-10-01",
+      "due_date": "2026-10-01",
+      "category": "อื่นๆ",
+      "title": "ค่าสินเชื่อวงเงินประกันคุ้มครองสินเชื่อ",
+      "vendor": "ธนาคารกสิกรไทย",
+      "amount": 1422.88,
+      "paid_amount": 1422.88,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": ""
+    }
+  ],
   "stock_items": [
     {
       "id": "stk-pp-gloss",
