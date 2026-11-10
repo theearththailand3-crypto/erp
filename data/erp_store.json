@@ -442,6 +442,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-4bdd2b53",
+      "date": "2026-10-17",
+      "due_date": "2026-10-17",
+      "category": "อื่นๆ",
+      "title": "โอนคืนลูกค้า",
+      "vendor": "ลูกค้า",
+      "amount": 999.0,
+      "paid_amount": 999.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
