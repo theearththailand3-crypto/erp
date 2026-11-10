@@ -25,7 +25,7 @@
       "paid_amount": 90500.0,
       "status": "paid",
       "payment_method": "โอนเงิน",
-      "note": ""
+      "note": "โอนเช็ค"
     },
     {
       "id": "exp-83631013",
@@ -38,7 +38,7 @@
       "paid_amount": 2200.0,
       "status": "paid",
       "payment_method": "โอนเงิน",
-      "note": ""
+      "note": "โอนเช็ค"
     },
     {
       "id": "exp-dac9c918",
