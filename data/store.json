@@ -273,6 +273,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-7fe3a1da",
+      "date": "2026-10-22",
+      "due_date": "2026-10-22",
+      "category": "ค่าบรรจุภัณฑ์/ซอง/กล่อง",
+      "title": "ค่าจัดส่งพัสดุ",
+      "vendor": "บริษัท แฟลช เอ็กเฟรส จำกัด",
+      "amount": 48.0,
+      "paid_amount": 48.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
