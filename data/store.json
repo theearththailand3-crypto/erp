@@ -416,6 +416,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "โอน"
+    },
+    {
+      "id": "exp-789897d8",
+      "date": "2026-10-31",
+      "due_date": "2026-10-31",
+      "category": "เงินเดือน/ค่าแรง/คอมมิชชัน",
+      "title": "ประกันสังคม (พนักงาน)",
+      "vendor": "บริษัท เอส.ที.โกลเด้น เฟลม จำกัด",
+      "amount": 5775.0,
+      "paid_amount": 5775.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "โอน"
     }
   ],
   "stock_items": [
