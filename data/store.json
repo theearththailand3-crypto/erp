@@ -26,6 +26,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": ""
+    },
+    {
+      "id": "exp-83631013",
+      "date": "2026-10-01",
+      "due_date": "2026-10-01",
+      "category": "อื่นๆ",
+      "title": "ค่าสินเชื่อวงเงินประกันคุ้มครองสินเชื่อ",
+      "vendor": "ธนาคารกสิกรไทย",
+      "amount": 2200.0,
+      "paid_amount": 2200.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": ""
     }
   ],
   "stock_items": [
