@@ -468,6 +468,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-1a70b3fb",
+      "date": "2026-10-26",
+      "due_date": "2026-10-26",
+      "category": "อื่นๆ",
+      "title": "ค่าใบมีดไดคัท 4 กล่อง",
+      "vendor": "ร้าน W.P.Shop 17",
+      "amount": 1000.0,
+      "paid_amount": 1000.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
