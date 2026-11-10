@@ -325,6 +325,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "โอน"
+    },
+    {
+      "id": "exp-aaa610af",
+      "date": "2026-10-31",
+      "due_date": "2026-10-31",
+      "category": "ค่าน้ำ/ค่าไฟ/อินเทอร์เน็ต",
+      "title": "ค่าบริการอินเทอร์เน็ต AIS",
+      "vendor": "บริษัท แอดวานซ์ไวร์เลส เน็ทเวอร์ค จำกัด",
+      "amount": 587.43,
+      "paid_amount": 587.43,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
