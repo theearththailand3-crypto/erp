@@ -351,6 +351,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-593a92c8",
+      "date": "2026-10-31",
+      "due_date": "2026-10-31",
+      "category": "ค่าขนส่ง/พัสดุ",
+      "title": "ค่าขนส่ง พัสดุด่วน",
+      "vendor": "Lalamove",
+      "amount": 1643.0,
+      "paid_amount": 1643.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
