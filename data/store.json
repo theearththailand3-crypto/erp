@@ -403,6 +403,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "โอนเช็ค"
+    },
+    {
+      "id": "exp-305ed252",
+      "date": "2026-10-31",
+      "due_date": "2026-10-31",
+      "category": "ค่าโฆษณาเพจ (Ads)",
+      "title": "ค่าสินเชื่อวงเงินประกันคุ้มครองสินเชื่อ",
+      "vendor": "ธนาคารกสิกรไทย",
+      "amount": 2200.0,
+      "paid_amount": 2200.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "โอนเช็ค"
     }
   ],
   "stock_items": [
