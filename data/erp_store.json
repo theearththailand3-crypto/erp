@@ -714,6 +714,31 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "โอน"
+    },
+    {
+      "id": "exp-5f9e18ef",
+      "source": "manual",
+      "sheet_tab": "ต.ค.26",
+      "seq": "",
+      "date": "2026-10-31",
+      "bill_date": "2026-10-31",
+      "doc_no": "",
+      "tax_inv_date": "",
+      "tax_inv_no": "",
+      "tax_id": "",
+      "branch": "",
+      "vendor": "บริษัท เอส.ที.โกลเด้น เฟลม จำกัด",
+      "title": "เงินเดือน/OT/คอมมิชชั่น/เบี้ยขยัน",
+      "price_before_vat": 2150.0,
+      "vat_7": 0.0,
+      "wht": 0.0,
+      "amount": 2150.0,
+      "due_date": "2026-10-31",
+      "category": "เงินเดือน/ค่าแรง/คอมมิชชัน",
+      "paid_amount": 2150.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "โอน"
     }
   ],
   "stock_items": [
