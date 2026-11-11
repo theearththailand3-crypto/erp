@@ -689,6 +689,31 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-f0c31e6d",
+      "source": "manual",
+      "sheet_tab": "ต.ค.26",
+      "seq": "",
+      "date": "2026-10-14",
+      "bill_date": "2026-10-14",
+      "doc_no": "",
+      "tax_inv_date": "",
+      "tax_inv_no": "",
+      "tax_id": "",
+      "branch": "",
+      "vendor": "บริษัท ดีดี 328 การบัญชี จำกัด",
+      "title": "ค่าบริการรับทำบัญชี",
+      "price_before_vat": 80706.28,
+      "vat_7": 0.0,
+      "wht": 0.0,
+      "amount": 80706.28,
+      "due_date": "2026-10-14",
+      "category": "อื่นๆ",
+      "paid_amount": 80706.28,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "โอน"
     }
   ],
   "stock_items": [
