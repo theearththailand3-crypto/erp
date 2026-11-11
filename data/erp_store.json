@@ -585,6 +585,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-dac80250",
+      "date": "2026-10-17",
+      "due_date": "2026-10-17",
+      "category": "อื่นๆ",
+      "title": "ค่าปลั๊กแปลงไฟ",
+      "vendor": "ร้าน Deli Tools officialshop",
+      "amount": 318.0,
+      "paid_amount": 318.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
