@@ -710,6 +710,7 @@
             </select>
             <input type="text" id="expSearch" placeholder="🔍 ค้นหารายการจ่าย / ชื่อเจ้าหนี้..." oninput="renderExpenseTab()" style="width:230px;" />
             <button class="btn btn-primary" onclick="openExpenseModal()">➕ บันทึกรายจ่าย / เจ้าหนี้</button>
+            <button class="btn btn-outline" onclick="exportExpenseCsv()">📥 ส่งออก CSV</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -2754,12 +2755,12 @@
     }
 
     // ==================== 2. EXPENSE & CREDITOR TAB ====================
-    function renderExpenseTab() {
+    function getFilteredExpenses() {
       const stFilter = document.getElementById('expStatusFilter').value;
       const catFilter = document.getElementById('expCatFilter').value;
       const q = (document.getElementById('expSearch').value || '').trim().toLowerCase();
 
-      const list = STATE.expenses.filter(x => {
+      return (STATE.expenses || []).filter(x => {
         if (!inDateRange(x.date) && x.status === 'paid') return false;
         if (stFilter && x.status !== stFilter) return false;
         if (catFilter && x.category !== catFilter) return false;
@@ -2769,6 +2770,42 @@
         }
         return true;
       });
+    }
+
+    function exportExpenseCsv() {
+      const list = getFilteredExpenses();
+      const rows = [['วันที่', 'หมวดหมู่', 'รายการค่าใช้จ่าย', 'เจ้าหนี้ / ร้านค้า', 'ครบกำหนดชำระ', 'สถานะ', 'ช่องทางชำระ', 'ยอดรวม (บาท)', 'จ่ายแล้ว (บาท)', 'ค้างจ่าย (บาท)', 'หมายเหตุ']];
+      list.forEach(x => {
+        const amt = Number(x.amount || 0);
+        const paid = Number(x.paid_amount || 0);
+        const owed = Math.max(0, amt - paid);
+        let stLabel = 'จ่ายแล้ว';
+        if (x.status === 'creditor' || owed >= amt) stLabel = 'เจ้าหนี้ค้างจ่าย';
+        else if (owed > 0) stLabel = 'จ่ายบางส่วน';
+        rows.push([
+          x.date || '',
+          x.category || '',
+          x.title || '',
+          x.vendor || '',
+          x.due_date || '',
+          stLabel,
+          x.payment_method || 'โอนเงิน',
+          amt,
+          paid,
+          owed,
+          x.note || ''
+        ]);
+      });
+      const csv = '\uFEFF' + rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `STPrint_Expense_${document.getElementById('dateFrom').value || 'all'}_${document.getElementById('dateTo').value || 'all'}.csv`;
+      a.click();
+    }
+
+    function renderExpenseTab() {
+      const list = getFilteredExpenses();
 
       const totalAmt = list.reduce((s, x) => s + Number(x.amount || 0), 0);
       const totalPaid = list.reduce((s, x) => s + Number(x.paid_amount || 0), 0);
