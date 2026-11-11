@@ -559,6 +559,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-1cabc487",
+      "date": "2026-10-16",
+      "due_date": "2026-10-16",
+      "category": "อื่นๆ",
+      "title": "ค่าไม้บรรทัด",
+      "vendor": "ร้าน Fixlance",
+      "amount": 345.0,
+      "paid_amount": 345.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
