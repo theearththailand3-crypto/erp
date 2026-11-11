@@ -624,6 +624,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-586a459f",
+      "date": "2026-10-21",
+      "due_date": "2026-10-21",
+      "category": "อื่นๆ",
+      "title": "ค่าเมาส์",
+      "vendor": "ร้าน Hardware Corner Pantip Bangkapi",
+      "amount": 169.0,
+      "paid_amount": 169.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
