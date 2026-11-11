@@ -676,6 +676,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-abe5a4b3",
+      "date": "2026-10-31",
+      "due_date": "2026-10-31",
+      "category": "อื่นๆ",
+      "title": "ค่าเก้าอี้พลาสติก",
+      "vendor": "ร้าน NovaMart",
+      "amount": 250.0,
+      "paid_amount": 250.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
