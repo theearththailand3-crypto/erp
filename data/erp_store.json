@@ -598,6 +598,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-b3ef52e7",
+      "date": "2026-10-18",
+      "due_date": "2026-10-18",
+      "category": "อื่นๆ",
+      "title": "ค่าเทปใส (ม้วนใหญ่)",
+      "vendor": "ร้าน Plastics Kingdom",
+      "amount": 314.0,
+      "paid_amount": 314.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
