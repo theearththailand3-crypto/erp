@@ -546,6 +546,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-530b64f0",
+      "date": "2026-10-08",
+      "due_date": "2026-10-08",
+      "category": "อื่นๆ",
+      "title": "ค่าบับเบิลกันกระแทก",
+      "vendor": "ร้าน doony doll",
+      "amount": 135.0,
+      "paid_amount": 135.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
