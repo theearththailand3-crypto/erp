@@ -611,6 +611,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-d92f74f9",
+      "date": "2026-10-20",
+      "due_date": "2026-10-20",
+      "category": "อื่นๆ",
+      "title": "ค่ากล่องไปรษณีย์",
+      "vendor": "ร้าน SC Paper-Pack Official Shop",
+      "amount": 430.0,
+      "paid_amount": 430.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
