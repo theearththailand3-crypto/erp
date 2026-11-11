@@ -278,6 +278,19 @@
       vertical-align: middle;
     }
     tr:hover td { background: #f8fafc; }
+    #tab-expense table th, #tab-expense table td {
+      padding: 8px 9px;
+      font-size: 12.5px;
+    }
+    tfoot.exp-tfoot td {
+      position: sticky;
+      bottom: 0;
+      background: #f1f5f9;
+      border-top: 2px solid #cbd5e1;
+      font-weight: 700;
+      color: #0f172a;
+      z-index: 9;
+    }
     .text-right { text-align: right; }
     .text-center { text-align: center; }
     /* Badges */
@@ -688,8 +701,12 @@
       <div class="kpi-grid" id="expenseKpis"></div>
       <div class="card">
         <div class="card-header">
-          <div class="card-title">💸 รายการรายจ่าย / เจ้าหนี้ค้างจ่าย / ต้นทุนร้าน</div>
+          <div class="card-title">💸 รายการค่าใช้จ่ายประจำเดือน / เจ้าหนี้ (หัวข้อตามชีตบัญชี ST Print)</div>
           <div class="toolbar">
+            <select id="expMonthTabFilter" onchange="renderExpenseTab()">
+              <option value="">📅 ตามช่วงวันที่ด้านบน</option>
+              <option value="ALL_MONTHS">📚 ทุกเดือนทั้งหมด</option>
+            </select>
             <select id="expStatusFilter" onchange="renderExpenseTab()">
               <option value="">ทุกสถานะการจ่าย</option>
               <option value="creditor">⚠️ ค้างจ่าย (เจ้าหนี้)</option>
@@ -708,8 +725,10 @@
               <option value="เจ้าหนี้การค้า">เจ้าหนี้การค้า</option>
               <option value="อื่นๆ">อื่นๆ</option>
             </select>
-            <input type="text" id="expSearch" placeholder="🔍 ค้นหารายการจ่าย / ชื่อเจ้าหนี้..." oninput="renderExpenseTab()" style="width:230px;" />
-            <button class="btn btn-primary" onclick="openExpenseModal()">➕ บันทึกรายจ่าย / เจ้าหนี้</button>
+            <input type="text" id="expSearch" placeholder="🔍 ค้นหาชื่อร้าน / รายการ / เลขใบกำกับ / รหัสภาษี..." oninput="renderExpenseTab()" style="width:240px;" />
+            <button class="btn btn-primary" onclick="openExpenseModal()">➕ บันทึกรายจ่าย</button>
+            <button class="btn btn-outline" id="btnSyncExpenseSheet" onclick="syncExpenseSheetNow()" title="ดึงข้อมูลสดจาก Google Sheet รายการค่าใช้จ่าย">🔄 ซิงก์ชีตรายจ่าย</button>
+            <button class="btn btn-outline" onclick="copyExpenseForSheet()" title="คัดลอกตาราง 13 คอลัมน์ไปกดวาง (Ctrl+V) ใน Google Sheet ได้ทันที">📋 คัดลอกลงชีต</button>
             <button class="btn btn-outline" onclick="exportExpenseCsv()">📥 ส่งออก CSV</button>
           </div>
         </div>
@@ -717,19 +736,24 @@
           <table>
             <thead>
               <tr>
+                <th class="text-center">ลำดับ</th>
                 <th>วันที่</th>
-                <th>หมวดหมู่</th>
-                <th>รายการค่าใช้จ่าย</th>
-                <th>เจ้าหนี้ / ร้านค้า</th>
-                <th>ครบกำหนดชำระ</th>
-                <th>สถานะ</th>
-                <th class="text-right">ยอดรวม (บาท)</th>
-                <th class="text-right">จ่ายแล้ว</th>
-                <th class="text-right">ค้างจ่าย</th>
+                <th class="text-center">เลขที่</th>
+                <th>วันที่ใบกำกับ</th>
+                <th>เลขที่ใบกำกับ</th>
+                <th>รหัสเสียภาษี</th>
+                <th>สาขา</th>
+                <th>ชื่อร้าน</th>
+                <th>รายการ</th>
+                <th class="text-right">ราคา(ก่อน Vat)</th>
+                <th class="text-right">Vat7%</th>
+                <th class="text-right">หักณ.ที่จ่าย</th>
+                <th class="text-right">ราคาสุทธิ</th>
                 <th>จัดการ</th>
               </tr>
             </thead>
             <tbody id="expenseTableBody"></tbody>
+            <tfoot id="expenseTableFoot" class="exp-tfoot"></tfoot>
           </table>
         </div>
       </div>
@@ -1158,21 +1182,114 @@
     </div>
   </div>
 
-  <!-- Modal: Add/Edit Expense or Creditor -->
+  <!-- Modal: Add/Edit Expense or Creditor (13-Column Accounting Sheet Layout) -->
   <div class="modal-backdrop" id="modalExpense">
-    <div class="modal">
+    <div class="modal" style="max-width:780px;">
       <div class="modal-header">
-        <h3 id="expModalTitle">➕ บันทึกรายจ่าย / เจ้าหนี้</h3>
+        <h3 id="expModalTitle">➕ บันทึกรายจ่าย / ใบกำกับภาษี / เจ้าหนี้</h3>
         <button class="btn btn-outline btn-sm" onclick="closeModal('modalExpense')">✕ ปิด</button>
       </div>
       <input type="hidden" id="expFormId" />
-      <div class="form-grid">
+      <input type="hidden" id="expFormSheetTab" />
+      <datalist id="expVendorDatalist"></datalist>
+      <datalist id="expBranchDatalist">
+        <option value="สำนักงานใหญ่"></option>
+        <option value="00001"></option>
+        <option value="00002"></option>
+        <option value="00140"></option>
+      </datalist>
+
+      <div class="form-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
         <div class="form-group">
-          <label>วันที่ทำรายการ</label>
-          <input type="date" id="expFormDate" />
+          <label>1. ลำดับ</label>
+          <input type="text" id="expFormSeq" placeholder="เช่น 1" oninput="syncExpDocNoFromSeq()" />
         </div>
         <div class="form-group">
-          <label>หมวดหมู่</label>
+          <label>2. วันที่</label>
+          <input type="date" id="expFormDate" onchange="onExpDateChange()" />
+        </div>
+        <div class="form-group">
+          <label>3. เลขที่</label>
+          <input type="text" id="expFormDocNo" placeholder="เช่น 1" />
+        </div>
+        <div class="form-group">
+          <label style="display:flex;justify-content:space-between;align-items:center;">
+            <span>4. วันที่ใบกำกับ</span>
+            <a href="javascript:void(0)" onclick="document.getElementById('expFormTaxInvDate').value=''" style="font-size:11px;color:var(--muted);font-weight:400;text-decoration:none;">ล้าง</a>
+          </label>
+          <input type="date" id="expFormTaxInvDate" />
+        </div>
+      </div>
+
+      <div class="form-grid" style="grid-template-columns:1.2fr 1.2fr 0.9fr;margin-top:10px;">
+        <div class="form-group">
+          <label>5. เลขที่ใบกำกับ</label>
+          <input type="text" id="expFormTaxInvNo" placeholder="เช่น IV6910111 (ถ้ามี)" />
+        </div>
+        <div class="form-group">
+          <label>6. รหัสเสียภาษี (13 หลัก)</label>
+          <input type="text" id="expFormTaxId" maxlength="16" placeholder="เช่น 0105513004762" />
+        </div>
+        <div class="form-group">
+          <label>7. สาขา</label>
+          <input type="text" id="expFormBranch" list="expBranchDatalist" placeholder="สำนักงานใหญ่ / 00001" />
+        </div>
+      </div>
+
+      <div class="form-grid" style="margin-top:10px;">
+        <div class="form-group">
+          <label>8. ชื่อร้าน <span style="font-weight:400;color:var(--muted);font-size:11px;">(พิมพ์เลือกเพื่อดึงรหัสภาษีอัตโนมัติ)</span></label>
+          <input type="text" id="expFormVendor" list="expVendorDatalist" oninput="onExpVendorInput()" placeholder="เช่น บริษัท ริโก้ (ประเทศไทย) จำกัด / Lalamove" />
+        </div>
+        <div class="form-group">
+          <label>9. รายการ *</label>
+          <input type="text" id="expFormTitle" placeholder="เช่น ค่าสติ๊กเกอร์ PP ขาวเงา / ค่ามิเตอร์เครื่อง ริโก้" />
+        </div>
+      </div>
+
+      <div style="margin-top:12px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:12px 14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+          <div style="font-size:12.5px;font-weight:700;color:#1e293b;">🧮 คำนวณยอดเงิน (ช่อง 10–13 ตามสูตรชีตบัญชี `ราคาสุทธิ = ก่อน Vat + Vat7% - หัก ณ ที่จ่าย`)</div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="extractVatFromGross()" title="ถ้ายอดในช่องราคาก่อน Vat เป็นยอดที่รวม Vat 7% มาแล้ว กดปุ่มนี้เพื่อถอด Vat 7% อัตโนมัติ">✨ ถอด Vat 7% จากยอดรวม</button>
+        </div>
+        <div class="form-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
+          <div class="form-group">
+            <label>10. ราคา(ก่อน Vat)</label>
+            <input type="number" id="expFormBeforeVat" step="0.01" placeholder="0.00" oninput="recalcExpAmounts('before_vat')" />
+          </div>
+          <div class="form-group">
+            <label style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+              <span>11. Vat7%</span>
+              <label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--primary);cursor:pointer;">
+                <input type="checkbox" id="expAutoVat7" onchange="recalcExpAmounts('toggle_vat')" /> +7%
+              </label>
+            </label>
+            <input type="number" id="expFormVat7" step="0.01" placeholder="0.00" oninput="recalcExpAmounts('manual_tax')" />
+          </div>
+          <div class="form-group">
+            <label style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+              <span>12. หักณ.ที่จ่าย</span>
+              <select id="expWhtRate" onchange="recalcExpAmounts('wht_rate')" style="padding:1px 4px;font-size:11px;height:20px;border-radius:4px;">
+                <option value="0">ไม่หัก</option>
+                <option value="0.01">1%</option>
+                <option value="0.02">2%</option>
+                <option value="0.03">3%</option>
+                <option value="0.05">5%</option>
+                <option value="custom">กรอกเอง</option>
+              </select>
+            </label>
+            <input type="number" id="expFormWht" step="0.01" placeholder="0.00" oninput="document.getElementById('expWhtRate').value='custom';recalcExpAmounts('manual_tax')" />
+          </div>
+          <div class="form-group">
+            <label style="color:var(--primary);">13. ราคาสุทธิ *</label>
+            <input type="number" id="expFormAmount" step="0.01" placeholder="0.00" style="font-weight:700;border-color:#93c5fd;background:#eff6ff;" oninput="onExpNetManualInput()" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;margin-top:12px;">
+        <div class="form-group">
+          <label>หมวดหมู่ (สำหรับกรองดู)</label>
           <select id="expFormCat">
             <option value="ค่าสติ๊กเกอร์/วัตถุดิบ">ค่าสติ๊กเกอร์/วัตถุดิบ</option>
             <option value="ค่าหมึกพิมพ์/อะไหล่">ค่าหมึกพิมพ์/อะไหล่</option>
@@ -1185,22 +1302,6 @@
             <option value="อื่นๆ">อื่นๆ</option>
           </select>
         </div>
-        <div class="form-group full">
-          <label>ชื่อรายการค่าใช้จ่าย / รายละเอียดบิล</label>
-          <input type="text" id="expFormTitle" placeholder="เช่น ซื้อสติ๊กเกอร์ PP ขาวเงา 10 กล่อง / ค่าแอดเพจ PLP" />
-        </div>
-        <div class="form-group">
-          <label>ชื่อเจ้าหนี้ / ร้านค้า / ผู้รับเงิน</label>
-          <input type="text" id="expFormVendor" placeholder="เช่น บริษัท กระดาษสติ๊กเกอร์ จำกัด" />
-        </div>
-        <div class="form-group">
-          <label>วันครบกำหนดชำระ (กรณีเจ้าหนี้ค้างจ่าย)</label>
-          <input type="date" id="expFormDueDate" />
-        </div>
-        <div class="form-group">
-          <label>จำนวนเงินรวม (บาท)</label>
-          <input type="number" id="expFormAmount" step="0.01" placeholder="0.00" />
-        </div>
         <div class="form-group">
           <label>สถานะการจ่าย</label>
           <select id="expFormStatus" onchange="onExpStatusChange()">
@@ -1209,13 +1310,17 @@
             <option value="partial">⏳ จ่ายบางส่วน</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>วันครบกำหนดชำระ (ถ้าค้างจ่าย)</label>
+          <input type="date" id="expFormDueDate" />
+        </div>
         <div class="form-group" id="expPaidAmtGroup" style="display:none;">
           <label>ยอดที่จ่ายแล้วบางส่วน (บาท)</label>
           <input type="number" id="expFormPaidAmount" step="0.01" placeholder="0.00" />
         </div>
         <div class="form-group full">
-          <label>หมายเหตุ / เลขที่บิล / บัญชีที่โอน</label>
-          <input type="text" id="expFormNote" placeholder="หมายเหตุเพิ่มเติม" />
+          <label>หมายเหตุเพิ่มเติม (ถ้ามี)</label>
+          <input type="text" id="expFormNote" placeholder="เช่น โอนเช็ค / เงินสดย่อย / บัญชีที่โอน" />
         </div>
       </div>
       <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px;">
@@ -1541,25 +1646,47 @@
         st.users = body.users;
       } else if (path === '/api/expense/save') {
         const eid = body.id || ('exp-' + Date.now());
+        const billDate = body.bill_date || body.date || new Date().toISOString().slice(0, 10);
+        const acctDate = body.date || billDate;
         const amt = Number(body.amount || 0);
+        const vat7 = Number(body.vat_7 || 0);
+        const wht = Number(body.wht || 0);
+        let beforeVat = Number(body.price_before_vat || 0);
+        if (beforeVat <= 0 && amt > 0 && vat7 === 0 && wht === 0) beforeVat = amt;
+        const netAmt = amt > 0 ? amt : Math.max(0, beforeVat + vat7 - wht);
         const status = body.status || 'paid';
-        const paid = status === 'paid' ? amt : (status === 'creditor' ? 0 : Number(body.paid_amount || 0));
+        const paid = status === 'paid' ? netAmt : (status === 'creditor' ? 0 : Number(body.paid_amount || 0));
+        const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+        const dm = /^(\d{4})-(\d{2})/.exec(billDate);
+        const inferredTab = dm ? `${thMonths[parseInt(dm[2], 10) - 1] || ''}${dm[1].slice(-2)}` : '';
         const rec = {
           id: eid,
-          date: body.date || new Date().toISOString().slice(0, 10),
+          source: String(eid).startsWith('exp-gs-') ? 'gsheet' : 'manual',
+          sheet_tab: body.sheet_tab || inferredTab,
+          seq: String(body.seq ?? '').trim(),
+          date: acctDate,
+          bill_date: billDate,
+          doc_no: String(body.doc_no ?? '').trim(),
+          tax_inv_date: body.tax_inv_date || '',
+          tax_inv_no: String(body.tax_inv_no ?? '').trim(),
+          tax_id: String(body.tax_id ?? '').trim(),
+          branch: String(body.branch ?? '').trim(),
           category: body.category || 'อื่นๆ',
           title: body.title || '',
           vendor: body.vendor || '',
           due_date: body.due_date || '',
           status: status,
-          amount: amt,
+          price_before_vat: beforeVat,
+          vat_7: vat7,
+          wht: wht,
+          amount: netAmt,
           paid_amount: paid,
           payment_method: body.payment_method || body.method || 'โอนเงิน',
           note: body.note || ''
         };
         const idx = (st.expenses || []).findIndex(x => x.id === eid);
         if (idx >= 0) st.expenses[idx] = rec;
-        else (st.expenses = st.expenses || []).unshift(rec);
+        else (st.expenses = st.expenses || []).push(rec);
       } else if (path === '/api/expense/mark_paid') {
         const ex = (st.expenses || []).find(x => x.id === body.id);
         if (ex) { ex.status = 'paid'; ex.paid_amount = ex.amount; }
@@ -1902,7 +2029,7 @@
         }
         return new Response(JSON.stringify({ ok: false, error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
-      if (url === '/api/sync' || url === '/api/myorder/sync') {
+      if (url === '/api/sync' || url === '/api/myorder/sync' || url === '/api/expense/sync') {
         const st = await _fetchCloudSnapshot();
         return new Response(JSON.stringify({ ok: true, state: st }), { status: 200, headers: { 'Content-Type': 'application/json' } });
       }
@@ -2382,6 +2509,8 @@
       }
     }
 
+    let _EXP_VENDOR_TAX_MAP = {};
+
     function populateFilters() {
       const channels = [...new Set(STATE.incomes.map(x => x.channel).filter(Boolean))].sort();
       const sales = [...new Set(STATE.incomes.map(x => x.sales).filter(Boolean))].sort();
@@ -2394,6 +2523,41 @@
       const curSa = saSel.value;
       saSel.innerHTML = '<option value="">ทุกเซลล์</option>' + sales.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
       saSel.value = curSa;
+
+      // Populate Expense Month Sheet Tabs & Vendor Tax Datalist
+      const expTabSel = document.getElementById('expMonthTabFilter');
+      if (expTabSel) {
+        const curExpTab = expTabSel.value;
+        const tabsFromInfo = (STATE.expense_sheet_info && Array.isArray(STATE.expense_sheet_info.tabs)) ? STATE.expense_sheet_info.tabs : [];
+        const tabsFromData = (STATE.expenses || []).map(x => x.sheet_tab).filter(Boolean);
+        const allExpTabs = [...new Set([...tabsFromInfo, ...tabsFromData])];
+        expTabSel.innerHTML =
+          '<option value="">📅 ตามช่วงวันที่ด้านบน</option>' +
+          '<option value="ALL_MONTHS">📚 ทุกเดือนทั้งหมด</option>' +
+          allExpTabs.map(t => `<option value="${esc(t)}">📑 แท็บ ${esc(t)}</option>`).join('');
+        if ([...expTabSel.options].some(o => o.value === curExpTab)) {
+          expTabSel.value = curExpTab;
+        }
+      }
+
+      _EXP_VENDOR_TAX_MAP = {};
+      const vendorSet = new Set();
+      for (const ex of (STATE.expenses || [])) {
+        const v = String(ex.vendor || '').trim();
+        if (!v) continue;
+        vendorSet.add(v);
+        const key = v.toLowerCase();
+        const prev = _EXP_VENDOR_TAX_MAP[key] || {};
+        _EXP_VENDOR_TAX_MAP[key] = {
+          tax_id: ex.tax_id || prev.tax_id || '',
+          branch: ex.branch || prev.branch || '',
+          category: ex.category || prev.category || 'อื่นๆ'
+        };
+      }
+      const vendorDl = document.getElementById('expVendorDatalist');
+      if (vendorDl) {
+        vendorDl.innerHTML = [...vendorSet].sort().map(v => `<option value="${esc(v)}"></option>`).join('');
+      }
     }
 
     function renderAll() {
@@ -2754,171 +2918,446 @@
       a.click();
     }
 
-    // ==================== 2. EXPENSE & CREDITOR TAB ====================
+    // ==================== 2. EXPENSE & CREDITOR TAB (13-COLUMN ACCOUNTING SHEET FORMAT) ====================
+    const fmtMoney2 = (n) => Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function fmtSlashDate(isoStr) {
+      const s = String(isoStr || '').trim();
+      if (!s) return '';
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+      if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+      return s;
+    }
+    function _getExpBeforeVat(x) {
+      const bv = Number(x.price_before_vat || 0);
+      if (bv > 0) return bv;
+      const v7 = Number(x.vat_7 || 0);
+      const wht = Number(x.wht || 0);
+      const amt = Number(x.amount || 0);
+      return (v7 === 0 && wht === 0) ? amt : Math.max(0, amt - v7 + wht);
+    }
+    function _inferExpSheetTabFromIso(isoDate) {
+      const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+      const m = /^(\d{4})-(\d{2})/.exec(String(isoDate || ''));
+      if (!m) return '';
+      const mon = parseInt(m[2], 10);
+      return (mon >= 1 && mon <= 12) ? `${thMonths[mon - 1]}${m[1].slice(-2)}` : '';
+    }
+
     function getFilteredExpenses() {
+      const tabEl = document.getElementById('expMonthTabFilter');
+      const tabFilter = tabEl ? tabEl.value : '';
       const stFilter = document.getElementById('expStatusFilter').value;
       const catFilter = document.getElementById('expCatFilter').value;
       const q = (document.getElementById('expSearch').value || '').trim().toLowerCase();
 
-      return (STATE.expenses || []).filter(x => {
-        if (!inDateRange(x.date) && x.status === 'paid') return false;
+      const filtered = (STATE.expenses || []).filter(x => {
+        if (tabFilter === 'ALL_MONTHS') {
+          // Show all months
+        } else if (tabFilter) {
+          if ((x.sheet_tab || _inferExpSheetTabFromIso(x.date)) !== tabFilter) return false;
+        } else {
+          if (!inDateRange(x.date) && x.status === 'paid') return false;
+        }
         if (stFilter && x.status !== stFilter) return false;
         if (catFilter && x.category !== catFilter) return false;
         if (q) {
-          const hay = `${x.title} ${x.vendor} ${x.category} ${x.note}`.toLowerCase();
+          const hay = `${x.seq || ''} ${x.doc_no || ''} ${x.tax_inv_no || ''} ${x.tax_id || ''} ${x.branch || ''} ${x.vendor || ''} ${x.title || ''} ${x.category || ''} ${x.note || ''}`.toLowerCase();
           if (!hay.includes(q)) return false;
         }
         return true;
       });
+
+      return filtered.slice().sort((a, b) => {
+        const sa = parseInt(String(a.seq || '').trim(), 10);
+        const sb = parseInt(String(b.seq || '').trim(), 10);
+        if (tabFilter && tabFilter !== 'ALL_MONTHS') {
+          const na = Number.isFinite(sa) ? sa : 999999;
+          const nb = Number.isFinite(sb) ? sb : 999999;
+          if (na !== nb) return na - nb;
+        }
+        const da = String(a.bill_date || a.date || '');
+        const db = String(b.bill_date || b.date || '');
+        if (da !== db) return da.localeCompare(db);
+        const na = Number.isFinite(sa) ? sa : 999999;
+        const nb = Number.isFinite(sb) ? sb : 999999;
+        return na - nb;
+      });
+    }
+
+    function _buildExpenseSheetRows(list) {
+      const headers = ['ลำดับ', 'วันที่', 'เลขที่', 'วันที่ใบกำกับ', 'เลขที่ใบกำกับ', 'รหัสเสียภาษี', 'สาขา', 'ชื่อร้าน', 'รายการ', 'ราคา(ก่อน Vat)', 'Vat7%', 'หักณ.ที่จ่าย', 'ราคาสุทธิ'];
+      const rows = [headers];
+      let sumBefore = 0, sumVat = 0, sumWht = 0, sumNet = 0;
+      list.forEach((x, idx) => {
+        const bv = _getExpBeforeVat(x);
+        const v7 = Number(x.vat_7 || 0);
+        const wht = Number(x.wht || 0);
+        const net = Number(x.amount || 0);
+        sumBefore += bv;
+        sumVat += v7;
+        sumWht += wht;
+        sumNet += net;
+        const billD = fmtSlashDate(x.bill_date || x.date || '');
+        const taxD = fmtSlashDate(x.tax_inv_date || '');
+        rows.push([
+          x.seq || String(idx + 1),
+          billD,
+          x.doc_no || x.seq || String(idx + 1),
+          taxD,
+          x.tax_inv_no || '',
+          x.tax_id || '',
+          x.branch || '',
+          x.vendor || '',
+          x.title || '',
+          Math.round(bv * 100) / 100,
+          v7 > 0 ? Math.round(v7 * 100) / 100 : '',
+          wht > 0 ? Math.round(wht * 100) / 100 : '',
+          Math.round(net * 100) / 100
+        ]);
+      });
+      rows.push([
+        'Total', '', '', '', '', '', '', '', '',
+        Math.round(sumBefore * 100) / 100,
+        Math.round(sumVat * 100) / 100,
+        Math.round(sumWht * 100) / 100,
+        Math.round(sumNet * 100) / 100
+      ]);
+      return rows;
     }
 
     function exportExpenseCsv() {
       const list = getFilteredExpenses();
-      const rows = [['วันที่', 'หมวดหมู่', 'รายการค่าใช้จ่าย', 'เจ้าหนี้ / ร้านค้า', 'ครบกำหนดชำระ', 'สถานะ', 'ช่องทางชำระ', 'ยอดรวม (บาท)', 'จ่ายแล้ว (บาท)', 'ค้างจ่าย (บาท)', 'หมายเหตุ']];
-      list.forEach(x => {
-        const amt = Number(x.amount || 0);
-        const paid = Number(x.paid_amount || 0);
-        const owed = Math.max(0, amt - paid);
-        let stLabel = 'จ่ายแล้ว';
-        if (x.status === 'creditor' || owed >= amt) stLabel = 'เจ้าหนี้ค้างจ่าย';
-        else if (owed > 0) stLabel = 'จ่ายบางส่วน';
-        rows.push([
-          x.date || '',
-          x.category || '',
-          x.title || '',
-          x.vendor || '',
-          x.due_date || '',
-          stLabel,
-          x.payment_method || 'โอนเงิน',
-          amt,
-          paid,
-          owed,
-          x.note || ''
-        ]);
-      });
-      const csv = '\uFEFF' + rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+      const rows = _buildExpenseSheetRows(list);
+      const csv = '\uFEFF' + rows.map(r => r.map((v, ci) => {
+        const s = String(v ?? '');
+        // Preserve leading zeros on 13-digit Tax ID / 5-digit Branch when opened in Excel while keeping clean text
+        if ((ci === 5 || ci === 6) && /^0\d+$/.test(s)) {
+          return `"\t${s.replace(/"/g, '""')}"`;
+        }
+        return `"${s.replace(/"/g, '""')}"`;
+      }).join(',')).join('\r\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a');
+      const tabVal = (document.getElementById('expMonthTabFilter')?.value || '').trim();
+      const suffix = tabVal ? tabVal : `${document.getElementById('dateFrom').value || 'all'}_${document.getElementById('dateTo').value || 'all'}`;
       a.href = URL.createObjectURL(blob);
-      a.download = `STPrint_Expense_${document.getElementById('dateFrom').value || 'all'}_${document.getElementById('dateTo').value || 'all'}.csv`;
+      a.download = `STPrint_Expense_${suffix}.csv`;
       a.click();
+    }
+
+    async function copyExpenseForSheet() {
+      const list = getFilteredExpenses();
+      if (!list.length) { alert('ไม่มีรายการรายจ่ายในมุมมองปัจจุบันให้คัดลอก'); return; }
+      const rows = _buildExpenseSheetRows(list);
+      const tsv = rows.map(r => r.map(v => String(v ?? '').replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\r\n');
+      try {
+        await navigator.clipboard.writeText(tsv);
+        alert(`✅ คัดลอกตารางรายจ่าย ${list.length} รายการ (ครบทั้ง 13 หัวข้อ + แถว Total) เรียบร้อยแล้ว!\nสามารถเปิด Google Sheet แล้วกด Ctrl+V วางได้เลยครับ`);
+      } catch (e) {
+        alert('คัดลอกไม่สำเร็จ: ' + e);
+      }
+    }
+
+    async function syncExpenseSheetNow() {
+      const btn = document.getElementById('btnSyncExpenseSheet');
+      const oldText = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังดึงชีตรายจ่าย...'; }
+      try {
+        const r = await fetch('/api/expense/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const res = await r.json();
+        if (res.ok && res.state) {
+          STATE = res.state;
+          populateFilters();
+          renderAll();
+        } else {
+          alert('ซิงก์ชีตรายจ่ายไม่สำเร็จ: ' + (res.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('เกิดข้อผิดพลาดในการซิงก์ชีตรายจ่าย: ' + e);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = oldText; }
+      }
     }
 
     function renderExpenseTab() {
       const list = getFilteredExpenses();
 
+      const totalBeforeVat = list.reduce((s, x) => s + _getExpBeforeVat(x), 0);
+      const totalVat7 = list.reduce((s, x) => s + Number(x.vat_7 || 0), 0);
+      const totalWht = list.reduce((s, x) => s + Number(x.wht || 0), 0);
       const totalAmt = list.reduce((s, x) => s + Number(x.amount || 0), 0);
       const totalPaid = list.reduce((s, x) => s + Number(x.paid_amount || 0), 0);
-      const allCreditorUnpaid = STATE.expenses.reduce((s, x) => s + Math.max(0, Number(x.amount || 0) - Number(x.paid_amount || 0)), 0);
-      const creditorBills = STATE.expenses.filter(x => Number(x.amount || 0) > Number(x.paid_amount || 0)).length;
+      const allCreditorUnpaid = (STATE.expenses || []).reduce((s, x) => s + Math.max(0, Number(x.amount || 0) - Number(x.paid_amount || 0)), 0);
+      const creditorBills = (STATE.expenses || []).filter(x => Number(x.amount || 0) > Number(x.paid_amount || 0)).length;
 
       document.getElementById('expenseKpis').innerHTML = `
-        <div class="kpi-card">
-          <div class="kpi-title">💸 ยอดรายจ่ายรวม</div>
-          <div class="kpi-value" style="color:var(--danger);">฿${fmtMoney(totalAmt)}</div>
-          <div class="kpi-sub">ทั้งหมด ${fmtInt(list.length)} รายการ</div>
+        <div class="kpi-card red">
+          <div class="kpi-title">💸 ราคาสุทธิรวม (รายการที่แสดง)</div>
+          <div class="kpi-value" style="color:var(--danger);">฿${fmtMoney2(totalAmt)}</div>
+          <div class="kpi-sub">ทั้งหมด ${fmtInt(list.length)} รายการ • จ่ายแล้ว ฿${fmtMoney2(totalPaid)}</div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-title">✅ ยอดที่จ่ายแล้ว</div>
-          <div class="kpi-value" style="color:var(--success);">฿${fmtMoney(totalPaid)}</div>
-          <div class="kpi-sub">โอนชำระเรียบร้อย</div>
+        <div class="kpi-card blue">
+          <div class="kpi-title">🧾 ราคา(ก่อน Vat) รวม</div>
+          <div class="kpi-value" style="color:var(--primary);">฿${fmtMoney2(totalBeforeVat)}</div>
+          <div class="kpi-sub">ยอดฐานภาษีก่อนบวก Vat 7%</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card purple">
+          <div class="kpi-title">🏛️ ภาษีซื้อ (Vat 7%) & หัก ณ ที่จ่าย</div>
+          <div class="kpi-value" style="color:var(--purple);">฿${fmtMoney2(totalVat7)}</div>
+          <div class="kpi-sub">Vat 7% รวม • หัก ณ ที่จ่ายรวม ฿${fmtMoney2(totalWht)}</div>
+        </div>
+        <div class="kpi-card amber">
           <div class="kpi-title">⚠️ ยอดค้างจ่ายเจ้าหนี้รวม</div>
-          <div class="kpi-value" style="color:var(--warn);">฿${fmtMoney(allCreditorUnpaid)}</div>
+          <div class="kpi-value" style="color:var(--warn);">฿${fmtMoney2(allCreditorUnpaid)}</div>
           <div class="kpi-sub">${fmtInt(creditorBills)} บิลค้างชำระ</div>
         </div>
       `;
 
       const expTbody = document.getElementById('expenseTableBody');
+      const expTfoot = document.getElementById('expenseTableFoot');
       const expThead = expTbody.previousElementSibling;
       if (isMobileView()) {
         expThead.innerHTML = `
           <tr>
-            <th style="width:40%;">วันที่ & รายการ/เจ้าหนี้</th>
-            <th style="width:28%;">สถานะ & กำหนดชำระ</th>
-            <th class="text-right" style="width:32%;">ยอดเงิน & จัดการ</th>
+            <th style="width:36%;">ลำดับ/วันที่ & ใบกำกับ</th>
+            <th style="width:34%;">ชื่อร้าน & รายการ</th>
+            <th class="text-right" style="width:30%;">ก่อนVat/สุทธิ & จัดการ</th>
           </tr>
         `;
-        expTbody.innerHTML = list.map(x => {
+        expTbody.innerHTML = list.map((x, idx) => {
+          const bv = _getExpBeforeVat(x);
+          const v7 = Number(x.vat_7 || 0);
+          const wht = Number(x.wht || 0);
           const amt = Number(x.amount || 0);
           const paid = Number(x.paid_amount || 0);
           const owed = Math.max(0, amt - paid);
-          let stBadge = '<span class="badge b-green">✅ จ่ายแล้ว</span>';
-          if (x.status === 'creditor' || owed >= amt) stBadge = '<span class="badge b-red">⚠️ เจ้าหนี้ค้างจ่าย</span>';
+          const seqDisp = x.seq || String(idx + 1);
+          const billDateDisp = fmtSlashDate(x.bill_date || x.date || '');
+          const taxDateDisp = fmtSlashDate(x.tax_inv_date || '');
+          let stBadge = '';
+          if (x.status === 'creditor' || owed >= amt) stBadge = '<span class="badge b-red">⚠️ ค้างจ่าย</span>';
           else if (owed > 0) stBadge = '<span class="badge b-amber">⏳ จ่ายบางส่วน</span>';
           return `
             <tr>
               <td>
-                <div><strong>${esc(x.date)}</strong> <span class="badge b-gray">${esc(x.category)}</span></div>
-                <div style="font-weight:600;margin-top:2px;">${esc(x.title)}</div>
-                <div style="font-size:10.5px;color:var(--muted);">เจ้าหนี้: ${esc(x.vendor || '-')}</div>
-                ${x.note ? `<div style="font-size:10px;color:var(--muted);">${esc(x.note)}</div>` : ''}
+                <div><strong>#${esc(seqDisp)}</strong> • <strong>${esc(billDateDisp)}</strong></div>
+                ${x.doc_no ? `<div style="font-size:10px;color:var(--muted);">เลขที่: ${esc(x.doc_no)}</div>` : ''}
+                ${x.tax_inv_no ? `<div style="font-size:10px;color:#1e40af;">ใบกำกับ: ${esc(x.tax_inv_no)} (${esc(taxDateDisp || '-')})</div>` : ''}
+                ${x.tax_id ? `<div style="font-size:10px;color:var(--muted);">ภาษี: ${esc(x.tax_id)} ${x.branch ? `(${esc(x.branch)})` : ''}</div>` : ''}
               </td>
               <td>
-                <div>${stBadge}</div>
-                <div style="font-size:10.5px;color:var(--muted);margin-top:3px;">ครบกำหนด: ${esc(x.due_date || '-')}</div>
+                <div style="font-weight:700;color:#0f172a;">${esc(x.vendor || '-')}</div>
+                <div style="font-size:11px;margin-top:2px;">${esc(x.title || '-')}</div>
+                ${stBadge ? `<div style="margin-top:3px;">${stBadge}</div>` : ''}
+                ${x.note ? `<div style="font-size:10px;color:var(--muted);">${esc(x.note)}</div>` : ''}
               </td>
               <td class="text-right">
-                <div style="font-weight:700;">รวม ฿${fmtMoney(amt)}</div>
-                <div style="font-size:10.5px;color:var(--success);">จ่ายแล้ว ฿${fmtMoney(paid)}</div>
-                ${owed > 0 ? `<div style="font-size:11px;font-weight:700;color:var(--danger);">ค้าง ฿${fmtMoney(owed)}</div>` : ''}
+                <div style="font-size:10px;color:var(--muted);">ก่อนVat ฿${fmtMoney2(bv)}</div>
+                ${v7 > 0 ? `<div style="font-size:10px;color:var(--purple);">+Vat7% ฿${fmtMoney2(v7)}</div>` : ''}
+                ${wht > 0 ? `<div style="font-size:10px;color:var(--warn);">-หัก ณ ฿${fmtMoney2(wht)}</div>` : ''}
+                <div style="font-weight:700;color:var(--danger);font-size:12.5px;">฿${fmtMoney2(amt)}</div>
                 <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:3px;margin-top:4px;">
                   ${owed > 0 ? `<button class="btn btn-success btn-sm" onclick="markExpensePaid('${esc(x.id)}')">✓ จ่าย</button>` : ''}
-                  <button class="btn btn-outline btn-sm" onclick='editExpense(${JSON.stringify(x).replace(/'/g, "&#39;")})'>แก้</button>
+                  <button class="btn btn-outline btn-sm" onclick="editExpenseById('${esc(x.id)}')">แก้</button>
                   <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteExpense('${esc(x.id)}')">ลบ</button>
                 </div>
               </td>
             </tr>
           `;
-        }).join('') || `<tr><td colspan="3" class="text-center" style="padding:18px;color:var(--muted);">ยังไม่มีรายการรายจ่าย / เจ้าหนี้</td></tr>`;
+        }).join('') || `<tr><td colspan="3" class="text-center" style="padding:18px;color:var(--muted);">ไม่พบรายการรายจ่ายในช่วงที่เลือก</td></tr>`;
+        if (expTfoot) {
+          expTfoot.innerHTML = list.length ? `
+            <tr>
+              <td colspan="2"><strong>Total (${fmtInt(list.length)} รายการ)</strong></td>
+              <td class="text-right" style="color:var(--danger);">฿${fmtMoney2(totalAmt)}</td>
+            </tr>
+          ` : '';
+        }
       } else {
         expThead.innerHTML = `
           <tr>
+            <th class="text-center">ลำดับ</th>
             <th>วันที่</th>
-            <th>หมวดหมู่</th>
-            <th>รายการค่าใช้จ่าย</th>
-            <th>เจ้าหนี้ / ร้านค้า</th>
-            <th>ครบกำหนดชำระ</th>
-            <th>สถานะ</th>
-            <th class="text-right">ยอดรวม (บาท)</th>
-            <th class="text-right">จ่ายแล้ว</th>
-            <th class="text-right">ค้างจ่าย</th>
+            <th class="text-center">เลขที่</th>
+            <th>วันที่ใบกำกับ</th>
+            <th>เลขที่ใบกำกับ</th>
+            <th>รหัสเสียภาษี</th>
+            <th>สาขา</th>
+            <th>ชื่อร้าน</th>
+            <th>รายการ</th>
+            <th class="text-right">ราคา(ก่อน Vat)</th>
+            <th class="text-right">Vat7%</th>
+            <th class="text-right">หักณ.ที่จ่าย</th>
+            <th class="text-right">ราคาสุทธิ</th>
             <th>จัดการ</th>
           </tr>
         `;
-        expTbody.innerHTML = list.map(x => {
+        expTbody.innerHTML = list.map((x, idx) => {
+          const bv = _getExpBeforeVat(x);
+          const v7 = Number(x.vat_7 || 0);
+          const wht = Number(x.wht || 0);
           const amt = Number(x.amount || 0);
           const paid = Number(x.paid_amount || 0);
           const owed = Math.max(0, amt - paid);
-          let stBadge = '<span class="badge b-green">✅ จ่ายแล้ว</span>';
-          if (x.status === 'creditor' || owed >= amt) stBadge = '<span class="badge b-red">⚠️ เจ้าหนี้ค้างจ่าย</span>';
-          else if (owed > 0) stBadge = '<span class="badge b-amber">⏳ จ่ายบางส่วน</span>';
+          const seqDisp = x.seq || String(idx + 1);
+          const docDisp = x.doc_no || x.seq || String(idx + 1);
+          const billDateDisp = fmtSlashDate(x.bill_date || x.date || '');
+          const taxDateDisp = fmtSlashDate(x.tax_inv_date || '');
+          let stBadge = '';
+          if (x.status === 'creditor' || owed >= amt) {
+            stBadge = `<span class="badge b-red" style="margin-left:4px;">⚠️ ค้างจ่าย ฿${fmtMoney2(owed)}</span>`;
+          } else if (owed > 0) {
+            stBadge = `<span class="badge b-amber" style="margin-left:4px;">⏳ ค้าง ฿${fmtMoney2(owed)}</span>`;
+          }
 
           return `
             <tr>
-              <td><strong>${esc(x.date)}</strong></td>
-              <td><span class="badge b-gray">${esc(x.category)}</span></td>
-              <td>
-                <div style="font-weight:600;">${esc(x.title)}</div>
-                ${x.note ? `<div style="font-size:11.5px;color:var(--muted);">${esc(x.note)}</div>` : ''}
+              <td class="text-center" style="font-weight:600;color:#475569;">${esc(seqDisp)}</td>
+              <td style="white-space:nowrap;"><strong>${esc(billDateDisp || '-')}</strong></td>
+              <td class="text-center" style="color:#475569;">${esc(docDisp)}</td>
+              <td style="white-space:nowrap;color:#475569;">${esc(taxDateDisp || '-')}</td>
+              <td style="font-family:Consolas,monospace;font-size:12px;">${esc(x.tax_inv_no || '-')}</td>
+              <td style="font-family:Consolas,monospace;font-size:12px;white-space:nowrap;">${esc(x.tax_id || '-')}</td>
+              <td style="white-space:nowrap;">${esc(x.branch || '-')}</td>
+              <td style="font-weight:600;min-width:150px;">${esc(x.vendor || '-')}</td>
+              <td style="min-width:170px;">
+                <div>${esc(x.title || '-')}${stBadge}</div>
+                ${x.note ? `<div style="font-size:11px;color:var(--muted);">${esc(x.note)}</div>` : ''}
               </td>
-              <td>${esc(x.vendor || '-')}</td>
-              <td>${esc(x.due_date || '-')}</td>
-              <td>${stBadge}</td>
-              <td class="text-right" style="font-weight:600;">฿${fmtMoney(amt)}</td>
-              <td class="text-right" style="color:var(--success);">฿${fmtMoney(paid)}</td>
-              <td class="text-right" style="font-weight:700;color:${owed > 0 ? 'var(--danger)' : 'var(--muted)'};">฿${fmtMoney(owed)}</td>
-              <td>
+              <td class="text-right" style="white-space:nowrap;">${fmtMoney2(bv)}</td>
+              <td class="text-right" style="white-space:nowrap;color:${v7 > 0 ? 'var(--purple)' : 'var(--muted)'};">${v7 > 0 ? fmtMoney2(v7) : '-'}</td>
+              <td class="text-right" style="white-space:nowrap;color:${wht > 0 ? 'var(--warn)' : 'var(--muted)'};">${wht > 0 ? fmtMoney2(wht) : '-'}</td>
+              <td class="text-right" style="white-space:nowrap;font-weight:700;color:#0f172a;">${fmtMoney2(amt)}</td>
+              <td style="white-space:nowrap;">
                 <div style="display:flex;gap:4px;">
-                  ${owed > 0 ? `<button class="btn btn-success btn-sm" onclick="markExpensePaid('${esc(x.id)}')">✓ จ่ายแล้ว</button>` : ''}
-                  <button class="btn btn-outline btn-sm" onclick='editExpense(${JSON.stringify(x).replace(/'/g, "&#39;")})'>แก้ไข</button>
+                  ${owed > 0 ? `<button class="btn btn-success btn-sm" onclick="markExpensePaid('${esc(x.id)}')">✓ จ่าย</button>` : ''}
+                  <button class="btn btn-outline btn-sm" onclick="editExpenseById('${esc(x.id)}')">แก้ไข</button>
                   <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteExpense('${esc(x.id)}')">ลบ</button>
                 </div>
               </td>
             </tr>
           `;
-        }).join('') || `<tr><td colspan="10" class="text-center" style="padding:24px;color:var(--muted);">ยังไม่มีรายการรายจ่าย / เจ้าหนี้ (กดปุ่ม "➕ บันทึกรายจ่าย / เจ้าหนี้" ด้านบนเพื่อเพิ่มรายการ)</td></tr>`;
+        }).join('') || `<tr><td colspan="14" class="text-center" style="padding:24px;color:var(--muted);">ไม่พบรายการรายจ่ายในช่วงที่เลือก (กดปุ่ม "➕ บันทึกรายจ่าย" เพื่อเพิ่มรายการใหม่ หรือเลือกแท็บเดือนบัญชีด้านบน)</td></tr>`;
+        if (expTfoot) {
+          expTfoot.innerHTML = list.length ? `
+            <tr>
+              <td class="text-center">Total</td>
+              <td colspan="8" style="color:var(--muted);font-weight:600;">รวมทั้งสิ้น ${fmtInt(list.length)} รายการ</td>
+              <td class="text-right">${fmtMoney2(totalBeforeVat)}</td>
+              <td class="text-right" style="color:var(--purple);">${fmtMoney2(totalVat7)}</td>
+              <td class="text-right" style="color:var(--warn);">${fmtMoney2(totalWht)}</td>
+              <td class="text-right" style="color:var(--danger);font-size:13.5px;">${fmtMoney2(totalAmt)}</td>
+              <td></td>
+            </tr>
+          ` : '';
+        }
+      }
+    }
+
+    let _expDocNoSynced = true;
+    let _expTaxDateSynced = true;
+
+    function syncExpDocNoFromSeq() {
+      if (_expDocNoSynced) {
+        document.getElementById('expFormDocNo').value = document.getElementById('expFormSeq').value;
+      }
+    }
+
+    function onExpDateChange() {
+      const d = document.getElementById('expFormDate').value;
+      if (_expTaxDateSynced && d) {
+        document.getElementById('expFormTaxInvDate').value = d;
+      }
+      if (!document.getElementById('expFormId').value && d) {
+        const targetTab = _inferExpSheetTabFromIso(d);
+        document.getElementById('expFormSheetTab').value = targetTab;
+        const nextSeq = _suggestNextExpSeq(targetTab);
+        document.getElementById('expFormSeq').value = String(nextSeq);
+        if (_expDocNoSynced) document.getElementById('expFormDocNo').value = String(nextSeq);
+      }
+    }
+
+    function _suggestNextExpSeq(sheetTab) {
+      let maxSeq = 0;
+      for (const x of (STATE.expenses || [])) {
+        const t = x.sheet_tab || _inferExpSheetTabFromIso(x.date);
+        if (sheetTab && t !== sheetTab) continue;
+        const n = parseInt(String(x.seq || '').trim(), 10);
+        if (Number.isFinite(n) && n > maxSeq) maxSeq = n;
+      }
+      return maxSeq + 1;
+    }
+
+    function onExpVendorInput() {
+      const v = (document.getElementById('expFormVendor').value || '').trim().toLowerCase();
+      const info = _EXP_VENDOR_TAX_MAP[v];
+      if (!info) return;
+      const taxEl = document.getElementById('expFormTaxId');
+      const brEl = document.getElementById('expFormBranch');
+      if (info.tax_id && !taxEl.value.trim()) taxEl.value = info.tax_id;
+      if (info.branch && !brEl.value.trim()) brEl.value = info.branch;
+      if (info.category && !document.getElementById('expFormId').value) {
+        document.getElementById('expFormCat').value = info.category;
+      }
+    }
+
+    function recalcExpAmounts(trigger) {
+      const bvEl = document.getElementById('expFormBeforeVat');
+      const vatEl = document.getElementById('expFormVat7');
+      const whtEl = document.getElementById('expFormWht');
+      const netEl = document.getElementById('expFormAmount');
+      const autoVat = document.getElementById('expAutoVat7').checked;
+      const whtRateVal = document.getElementById('expWhtRate').value;
+
+      const bv = parseFloat(bvEl.value || '0') || 0;
+      if (trigger === 'toggle_vat') {
+        vatEl.value = (autoVat && bv > 0) ? (Math.round(bv * 0.07 * 100) / 100).toFixed(2) : '';
+      } else if ((trigger === 'before_vat' || trigger === 'wht_rate') && autoVat) {
+        vatEl.value = bv > 0 ? (Math.round(bv * 0.07 * 100) / 100).toFixed(2) : '';
+      }
+
+      if (whtRateVal !== 'custom') {
+        const rate = parseFloat(whtRateVal || '0') || 0;
+        if (rate > 0 && bv > 0) {
+          whtEl.value = (Math.round(bv * rate * 100) / 100).toFixed(2);
+        } else if (trigger === 'wht_rate' && rate === 0) {
+          whtEl.value = '';
+        }
+      }
+
+      const v7 = parseFloat(vatEl.value || '0') || 0;
+      const wht = parseFloat(whtEl.value || '0') || 0;
+      const net = Math.max(0, Math.round((bv + v7 - wht) * 100) / 100);
+      netEl.value = net > 0 ? net.toFixed(2) : '';
+    }
+
+    function extractVatFromGross() {
+      const bvEl = document.getElementById('expFormBeforeVat');
+      const netEl = document.getElementById('expFormAmount');
+      const gross = parseFloat(bvEl.value || netEl.value || '0') || 0;
+      if (gross <= 0) {
+        alert('กรุณากรอกยอดเงินรวมในช่อง "10. ราคา(ก่อน Vat)" หรือ "13. ราคาสุทธิ" ก่อนกดถอด Vat 7% ครับ');
+        return;
+      }
+      const bv = Math.round((gross / 1.07) * 100) / 100;
+      const vat = Math.round((gross - bv) * 100) / 100;
+      bvEl.value = bv.toFixed(2);
+      document.getElementById('expFormVat7').value = vat.toFixed(2);
+      document.getElementById('expAutoVat7').checked = true;
+      recalcExpAmounts('manual_tax');
+    }
+
+    function onExpNetManualInput() {
+      const bvEl = document.getElementById('expFormBeforeVat');
+      const vatEl = document.getElementById('expFormVat7');
+      const whtEl = document.getElementById('expFormWht');
+      const netVal = document.getElementById('expFormAmount').value;
+      if ((!bvEl.value || parseFloat(bvEl.value) === 0) && !vatEl.value && !whtEl.value) {
+        bvEl.value = netVal;
       }
     }
 
@@ -2928,13 +3367,33 @@
     }
 
     function openExpenseModal() {
-      document.getElementById('expModalTitle').textContent = '➕ บันทึกรายจ่าย / เจ้าหนี้';
+      const today = new Date().toISOString().slice(0, 10);
+      const activeTabFilter = document.getElementById('expMonthTabFilter')?.value || '';
+      const targetTab = (activeTabFilter && activeTabFilter !== 'ALL_MONTHS') ? activeTabFilter : _inferExpSheetTabFromIso(today);
+      const nextSeq = _suggestNextExpSeq(targetTab);
+
+      _expDocNoSynced = true;
+      _expTaxDateSynced = true;
+      document.getElementById('expModalTitle').textContent = '➕ บันทึกรายจ่าย / ใบกำกับภาษี / เจ้าหนี้';
       document.getElementById('expFormId').value = '';
-      document.getElementById('expFormDate').value = new Date().toISOString().slice(0, 10);
-      document.getElementById('expFormDueDate').value = '';
-      document.getElementById('expFormTitle').value = '';
+      document.getElementById('expFormSheetTab').value = targetTab;
+      document.getElementById('expFormSeq').value = String(nextSeq);
+      document.getElementById('expFormDate').value = today;
+      document.getElementById('expFormDocNo').value = String(nextSeq);
+      document.getElementById('expFormTaxInvDate').value = today;
+      document.getElementById('expFormTaxInvNo').value = '';
+      document.getElementById('expFormTaxId').value = '';
+      document.getElementById('expFormBranch').value = '';
       document.getElementById('expFormVendor').value = '';
+      document.getElementById('expFormTitle').value = '';
+      document.getElementById('expFormBeforeVat').value = '';
+      document.getElementById('expFormVat7').value = '';
+      document.getElementById('expAutoVat7').checked = false;
+      document.getElementById('expWhtRate').value = '0';
+      document.getElementById('expFormWht').value = '';
       document.getElementById('expFormAmount').value = '';
+      document.getElementById('expFormCat').value = 'ค่าสติ๊กเกอร์/วัตถุดิบ';
+      document.getElementById('expFormDueDate').value = '';
       document.getElementById('expFormPaidAmount').value = '';
       document.getElementById('expFormStatus').value = 'paid';
       document.getElementById('expFormNote').value = '';
@@ -2942,15 +3401,38 @@
       document.getElementById('modalExpense').classList.add('open');
     }
 
+    function editExpenseById(id) {
+      const x = (STATE.expenses || []).find(item => item.id === id);
+      if (x) editExpense(x);
+    }
+
     function editExpense(x) {
-      document.getElementById('expModalTitle').textContent = '✏️ แก้ไขรายจ่าย / เจ้าหนี้';
-      document.getElementById('expFormId').value = x.id;
-      document.getElementById('expFormDate').value = x.date || '';
-      document.getElementById('expFormDueDate').value = x.due_date || '';
-      document.getElementById('expFormCat').value = x.category || 'อื่นๆ';
-      document.getElementById('expFormTitle').value = x.title || '';
+      _expDocNoSynced = false;
+      _expTaxDateSynced = false;
+      const bv = _getExpBeforeVat(x);
+      const v7 = Number(x.vat_7 || 0);
+      const wht = Number(x.wht || 0);
+      const amt = Number(x.amount || 0);
+      document.getElementById('expModalTitle').textContent = '✏️ แก้ไขรายจ่าย / ใบกำกับภาษี / เจ้าหนี้';
+      document.getElementById('expFormId').value = x.id || '';
+      document.getElementById('expFormSheetTab').value = x.sheet_tab || _inferExpSheetTabFromIso(x.bill_date || x.date || '');
+      document.getElementById('expFormSeq').value = x.seq || '';
+      document.getElementById('expFormDate').value = x.bill_date || x.date || '';
+      document.getElementById('expFormDocNo').value = x.doc_no || x.seq || '';
+      document.getElementById('expFormTaxInvDate').value = x.tax_inv_date || '';
+      document.getElementById('expFormTaxInvNo').value = x.tax_inv_no || '';
+      document.getElementById('expFormTaxId').value = x.tax_id || '';
+      document.getElementById('expFormBranch').value = x.branch || '';
       document.getElementById('expFormVendor').value = x.vendor || '';
-      document.getElementById('expFormAmount').value = x.amount || 0;
+      document.getElementById('expFormTitle').value = x.title || '';
+      document.getElementById('expFormBeforeVat').value = bv > 0 ? bv : '';
+      document.getElementById('expFormVat7').value = v7 > 0 ? v7 : '';
+      document.getElementById('expAutoVat7').checked = (bv > 0 && Math.abs(v7 - bv * 0.07) < 0.05);
+      document.getElementById('expWhtRate').value = wht > 0 ? 'custom' : '0';
+      document.getElementById('expFormWht').value = wht > 0 ? wht : '';
+      document.getElementById('expFormAmount').value = amt > 0 ? amt : '';
+      document.getElementById('expFormCat').value = x.category || 'อื่นๆ';
+      document.getElementById('expFormDueDate').value = x.due_date || '';
       document.getElementById('expFormPaidAmount').value = x.paid_amount || 0;
       document.getElementById('expFormStatus').value = x.status || 'paid';
       document.getElementById('expFormNote').value = x.note || '';
@@ -2960,26 +3442,59 @@
 
     async function saveExpense() {
       const title = document.getElementById('expFormTitle').value.trim();
-      const amount = parseFloat(document.getElementById('expFormAmount').value || '0');
-      if (!title || amount <= 0) { alert('กรุณากรอกชื่อรายการและจำนวนเงิน'); return; }
+      const vendor = document.getElementById('expFormVendor').value.trim();
+      let beforeVat = parseFloat(document.getElementById('expFormBeforeVat').value || '0') || 0;
+      const vat7 = parseFloat(document.getElementById('expFormVat7').value || '0') || 0;
+      const wht = parseFloat(document.getElementById('expFormWht').value || '0') || 0;
+      let amount = parseFloat(document.getElementById('expFormAmount').value || '0') || 0;
+      if (amount <= 0 && beforeVat > 0) {
+        amount = Math.max(0, Math.round((beforeVat + vat7 - wht) * 100) / 100);
+      }
+      if (beforeVat <= 0 && amount > 0 && vat7 === 0 && wht === 0) {
+        beforeVat = amount;
+      }
+      if (!title || amount <= 0) {
+        alert('กรุณากรอก "9. รายการ" และยอดเงิน ("10. ราคา(ก่อน Vat)" หรือ "13. ราคาสุทธิ") ให้ครบถ้วนครับ');
+        return;
+      }
+      const billDate = document.getElementById('expFormDate').value || new Date().toISOString().slice(0, 10);
+      const expId = document.getElementById('expFormId').value;
+      const sheetTab = expId ? (document.getElementById('expFormSheetTab').value || _inferExpSheetTabFromIso(billDate)) : _inferExpSheetTabFromIso(billDate);
+
       const r = await fetch('/api/expense/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: document.getElementById('expFormId').value,
-          date: document.getElementById('expFormDate').value,
+          id: expId,
+          sheet_tab: sheetTab,
+          seq: document.getElementById('expFormSeq').value.trim(),
+          date: billDate,
+          bill_date: billDate,
+          doc_no: document.getElementById('expFormDocNo').value.trim(),
+          tax_inv_date: document.getElementById('expFormTaxInvDate').value,
+          tax_inv_no: document.getElementById('expFormTaxInvNo').value.trim(),
+          tax_id: document.getElementById('expFormTaxId').value.trim(),
+          branch: document.getElementById('expFormBranch').value.trim(),
+          vendor,
+          title,
+          price_before_vat: beforeVat,
+          vat_7: vat7,
+          wht,
+          amount,
           due_date: document.getElementById('expFormDueDate').value,
           category: document.getElementById('expFormCat').value,
-          title,
-          vendor: document.getElementById('expFormVendor').value,
-          amount,
-          paid_amount: parseFloat(document.getElementById('expFormPaidAmount').value || '0'),
+          paid_amount: parseFloat(document.getElementById('expFormPaidAmount').value || '0') || 0,
           status: document.getElementById('expFormStatus').value,
-          note: document.getElementById('expFormNote').value,
+          note: document.getElementById('expFormNote').value.trim(),
         })
       });
       const res = await r.json();
-      if (res.ok) { STATE = res.state; closeModal('modalExpense'); renderAll(); }
+      if (res.ok) {
+        STATE = res.state;
+        populateFilters();
+        closeModal('modalExpense');
+        renderAll();
+      }
     }
 
     async function markExpensePaid(id) {
