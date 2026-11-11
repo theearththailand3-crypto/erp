@@ -650,6 +650,19 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-97b3273f",
+      "date": "2026-10-22",
+      "due_date": "2026-10-22",
+      "category": "อื่นๆ",
+      "title": "ค่าถุงแก้ว",
+      "vendor": "ร้าน Cozii.TH",
+      "amount": 50.0,
+      "paid_amount": 50.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
