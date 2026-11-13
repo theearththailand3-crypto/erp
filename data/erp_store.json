@@ -1126,6 +1126,31 @@
       "status": "creditor",
       "payment_method": "โอนเงิน",
       "note": ""
+    },
+    {
+      "id": "exp-bca24692",
+      "source": "manual",
+      "sheet_tab": "พ.ย.26",
+      "seq": "11",
+      "date": "2026-11-27",
+      "bill_date": "2026-11-27",
+      "doc_no": "11",
+      "tax_inv_date": "",
+      "tax_inv_no": "",
+      "tax_id": "0105521009891",
+      "branch": "สำนักงานใหญ่",
+      "vendor": "บริษัท ฟูจิฟิล์ม บิสซิเนส อินโนเวชั่น จำกัด",
+      "title": "ค่าเครื่อง ฟูจิ (งวดที่24)",
+      "price_before_vat": 28541.0,
+      "vat_7": 1997.87,
+      "wht": 0.0,
+      "amount": 30538.87,
+      "due_date": "2026-12-26",
+      "category": "อื่นๆ",
+      "paid_amount": 0.0,
+      "status": "creditor",
+      "payment_method": "โอนเงิน",
+      "note": ""
     }
   ],
   "stock_items": [
