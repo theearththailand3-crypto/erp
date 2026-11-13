@@ -776,6 +776,31 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-d018ee05",
+      "source": "manual",
+      "sheet_tab": "พ.ย.26",
+      "seq": "",
+      "date": "2026-11-04",
+      "bill_date": "2026-11-04",
+      "doc_no": "",
+      "tax_inv_date": "2026-11-04",
+      "tax_inv_no": "SMPIE26110248484",
+      "tax_id": "010555521215",
+      "branch": "00133",
+      "vendor": "บริษัท ซีอาร์ซี ไทวัสดุ จำกัด",
+      "title": "ค่าแผงไฟเพดาน/โคมไฟ",
+      "price_before_vat": 1529.51,
+      "vat_7": 107.07,
+      "wht": 0.0,
+      "amount": 1636.58,
+      "due_date": "2026-11-04",
+      "category": "อื่นๆ",
+      "paid_amount": 1636.58,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
