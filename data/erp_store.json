@@ -1076,6 +1076,31 @@
       "status": "creditor",
       "payment_method": "โอนเงิน",
       "note": ""
+    },
+    {
+      "id": "exp-65bfbf4c",
+      "source": "manual",
+      "sheet_tab": "ต.ค.26",
+      "seq": "58",
+      "date": "2026-10-26",
+      "bill_date": "2026-10-26",
+      "doc_no": "58",
+      "tax_inv_date": "",
+      "tax_inv_no": "",
+      "tax_id": "0105521009891",
+      "branch": "สำนักงานใหญ่",
+      "vendor": "บริษัท ฟูจิฟิล์ม บิสซิเนส อินโนเวชั่น จำกัด",
+      "title": "ค่ามิเตอร์เครื่อง ฟูจิ",
+      "price_before_vat": 65750.54,
+      "vat_7": 4602.54,
+      "wht": 0.0,
+      "amount": 70353.08,
+      "due_date": "2026-11-25",
+      "category": "อื่นๆ",
+      "paid_amount": 0.0,
+      "status": "creditor",
+      "payment_method": "โอนเงิน",
+      "note": ""
     }
   ],
   "stock_items": [
