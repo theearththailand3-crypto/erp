@@ -947,8 +947,8 @@
       "amount": 9630.0,
       "due_date": "2026-12-31",
       "category": "ค่าสติ๊กเกอร์/วัตถุดิบ",
-      "paid_amount": 9630.0,
-      "status": "paid",
+      "paid_amount": 0.0,
+      "status": "creditor",
       "payment_method": "โอนเงิน",
       "note": ""
     }
