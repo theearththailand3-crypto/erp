@@ -826,6 +826,31 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-29b9d302",
+      "source": "manual",
+      "sheet_tab": "พ.ย.26",
+      "seq": "3",
+      "date": "2026-11-10",
+      "bill_date": "2026-11-10",
+      "doc_no": "3",
+      "tax_inv_date": "2026-11-10",
+      "tax_inv_no": "016855",
+      "tax_id": "0107544000043",
+      "branch": "00119",
+      "vendor": "บริษัท โฮม โปรดักส์ เซ็นเตอร์ จำกัด",
+      "title": "ค่าชุดอุปกรณ์ถังปั่น/ไม้ม็อบบิด",
+      "price_before_vat": 1937.28,
+      "vat_7": 135.61,
+      "wht": 0.0,
+      "amount": 2072.89,
+      "due_date": "2026-11-10",
+      "category": "อื่นๆ",
+      "paid_amount": 2072.89,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
