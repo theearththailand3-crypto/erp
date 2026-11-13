@@ -1026,6 +1026,31 @@
       "status": "creditor",
       "payment_method": "โอนเงิน",
       "note": ""
+    },
+    {
+      "id": "exp-4bea25b4",
+      "source": "manual",
+      "sheet_tab": "ต.ค.26",
+      "seq": "57",
+      "date": "2026-10-05",
+      "bill_date": "2026-10-05",
+      "doc_no": "57",
+      "tax_inv_date": "",
+      "tax_inv_no": "IVT-20261000001",
+      "tax_id": "0135569021221",
+      "branch": "สำนักงานใหญ่",
+      "vendor": "บริษัท ชาร์ค ไพรม์ จำกัด",
+      "title": "ค่าสติ๊กเกอร์ (ขาวเงา)",
+      "price_before_vat": 42000.0,
+      "vat_7": 2940.0,
+      "wht": 0.0,
+      "amount": 44940.0,
+      "due_date": "2026-11-30",
+      "category": "ค่าสติ๊กเกอร์/วัตถุดิบ",
+      "paid_amount": 0.0,
+      "status": "creditor",
+      "payment_method": "โอนเงิน",
+      "note": ""
     }
   ],
   "stock_items": [
