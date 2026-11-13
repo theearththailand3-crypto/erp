@@ -876,6 +876,31 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-abefd14d",
+      "source": "manual",
+      "sheet_tab": "พ.ย.26",
+      "seq": "5",
+      "date": "2026-11-12",
+      "bill_date": "2026-11-12",
+      "doc_no": "5",
+      "tax_inv_date": "2026-11-12",
+      "tax_inv_no": "",
+      "tax_id": "",
+      "branch": "",
+      "vendor": "ร้าน Magictech Official Store",
+      "title": "ค่าสาย HDMI",
+      "price_before_vat": 1.0,
+      "vat_7": 0.0,
+      "wht": 0.0,
+      "amount": 189.0,
+      "due_date": "",
+      "category": "ค่าสติ๊กเกอร์/วัตถุดิบ",
+      "paid_amount": 189.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
