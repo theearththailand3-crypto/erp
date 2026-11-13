@@ -1226,6 +1226,31 @@
       "status": "creditor",
       "payment_method": "โอนเงิน",
       "note": ""
+    },
+    {
+      "id": "exp-3c9f6130",
+      "source": "manual",
+      "sheet_tab": "ต.ค.26",
+      "seq": "62",
+      "date": "2026-10-23",
+      "bill_date": "2026-10-23",
+      "doc_no": "62",
+      "tax_inv_date": "",
+      "tax_inv_no": "",
+      "tax_id": "0994000165200",
+      "branch": "00009",
+      "vendor": "การไฟฟ้านครหลวง",
+      "title": "ค่าไฟฟ้า 109/50",
+      "price_before_vat": 4012.07,
+      "vat_7": 280.84,
+      "wht": 0.0,
+      "amount": 4292.91,
+      "due_date": "2026-11-02",
+      "category": "ค่าน้ำ/ค่าไฟ/อินเทอร์เน็ต",
+      "paid_amount": 0.0,
+      "status": "creditor",
+      "payment_method": "โอนเงิน",
+      "note": ""
     }
   ],
   "stock_items": [
