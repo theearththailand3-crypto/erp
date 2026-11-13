@@ -1351,6 +1351,31 @@
       "status": "creditor",
       "payment_method": "โอนเงิน",
       "note": ""
+    },
+    {
+      "id": "exp-1ee7dea8",
+      "source": "manual",
+      "sheet_tab": "ต.ค.26",
+      "seq": "65",
+      "date": "2026-10-12",
+      "bill_date": "2026-10-12",
+      "doc_no": "65",
+      "tax_inv_date": "",
+      "tax_inv_no": "",
+      "tax_id": "0994000165463",
+      "branch": "00010",
+      "vendor": "การประปานครหลวง",
+      "title": "ค่าน้ำ 109/37",
+      "price_before_vat": 123.37,
+      "vat_7": 0.0,
+      "wht": 0.0,
+      "amount": 123.37,
+      "due_date": "2026-10-19",
+      "category": "ค่าน้ำ/ค่าไฟ/อินเทอร์เน็ต",
+      "paid_amount": 0.0,
+      "status": "creditor",
+      "payment_method": "โอนเงิน",
+      "note": ""
     }
   ],
   "stock_items": [
