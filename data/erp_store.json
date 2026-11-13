@@ -801,6 +801,31 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสด (กรรมการ)"
+    },
+    {
+      "id": "exp-225d3e00",
+      "source": "manual",
+      "sheet_tab": "พ.ย.26",
+      "seq": "2",
+      "date": "2026-11-06",
+      "bill_date": "2026-11-06",
+      "doc_no": "2",
+      "tax_inv_date": "2026-11-06",
+      "tax_inv_no": "IV6911151",
+      "tax_id": "0105549056399",
+      "branch": "สำนักงานใหญ่",
+      "vendor": "บริษัท เหรียญทองเทคโนโลยี การพิมพ์ จำกัด",
+      "title": "ค่านามบัตร 500 ใบ",
+      "price_before_vat": 180.0,
+      "vat_7": 12.6,
+      "wht": 0.0,
+      "amount": 192.6,
+      "due_date": "2026-11-06",
+      "category": "อื่นๆ",
+      "paid_amount": 192.6,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
