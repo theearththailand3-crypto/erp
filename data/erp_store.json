@@ -901,6 +901,31 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-8a642bba",
+      "source": "manual",
+      "sheet_tab": "พ.ย.26",
+      "seq": "8",
+      "date": "2026-11-13",
+      "bill_date": "2026-11-13",
+      "doc_no": "8",
+      "tax_inv_date": "2026-11-13",
+      "tax_inv_no": "",
+      "tax_id": "",
+      "branch": "",
+      "vendor": "บริษัท ดีดี 328 การบัญชี จำกัด",
+      "title": "ค่าบริการรับทำบัญชี",
+      "price_before_vat": 81364.72,
+      "vat_7": 0.0,
+      "wht": 0.0,
+      "amount": 81364.72,
+      "due_date": "",
+      "category": "อื่นๆ",
+      "paid_amount": 81364.72,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "โอน"
     }
   ],
   "stock_items": [
