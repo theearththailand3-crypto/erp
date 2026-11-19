@@ -1451,6 +1451,31 @@
       "status": "creditor",
       "payment_method": "โอนเงิน",
       "note": ""
+    },
+    {
+      "id": "exp-8e5abe91",
+      "source": "manual",
+      "sheet_tab": "พ.ย.26",
+      "seq": "14",
+      "date": "2026-11-13",
+      "bill_date": "2026-11-13",
+      "doc_no": "14",
+      "tax_inv_date": "2026-11-13",
+      "tax_inv_no": "IR00077612",
+      "tax_id": "0105513004762",
+      "branch": "สำนักงานใหญ่",
+      "vendor": "บริษัท ริโก้ (ประเทศไทย) จำกัด",
+      "title": "ค่ามิเตอร์เครื่อง ริโก้",
+      "price_before_vat": 38501.3,
+      "vat_7": 2695.09,
+      "wht": 1155.04,
+      "amount": 40041.35,
+      "due_date": "2026-11-30",
+      "category": "ค่าหมึกพิมพ์/อะไหล่",
+      "paid_amount": 0.0,
+      "status": "creditor",
+      "payment_method": "โอนเงิน",
+      "note": ""
     }
   ],
   "stock_items": [
