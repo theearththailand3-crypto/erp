@@ -1181,12 +1181,12 @@
       "id": "exp-3c9f6130",
       "source": "manual",
       "sheet_tab": "ต.ค.26",
-      "seq": "62",
+      "seq": "14",
       "date": "2026-11-20",
       "bill_date": "2026-11-20",
-      "doc_no": "62",
+      "doc_no": "14",
       "tax_inv_date": "2026-11-20",
-      "tax_inv_no": "",
+      "tax_inv_no": "0916911017002",
       "tax_id": "0994000165200",
       "branch": "00009",
       "vendor": "การไฟฟ้านครหลวง",
@@ -1200,7 +1200,7 @@
       "paid_amount": 4292.91,
       "status": "paid",
       "payment_method": "โอนเงิน",
-      "note": ""
+      "note": "เงินสดย่อย"
     },
     {
       "id": "exp-fcf156c6",
