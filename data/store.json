@@ -1501,6 +1501,31 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-9db43ff4",
+      "source": "manual",
+      "sheet_tab": "พ.ย.26",
+      "seq": "18",
+      "date": "2026-11-24",
+      "bill_date": "2026-11-24",
+      "doc_no": "18",
+      "tax_inv_date": "2026-11-24",
+      "tax_inv_no": "VC6911191",
+      "tax_id": "0103513022424",
+      "branch": "สำนักงานใหญ่",
+      "vendor": "ห้างหุ้นส่วนจำกัด ย.ยิ่งเจริญ",
+      "title": "ค่าซองเอกสาร (สีน้ำตาล)",
+      "price_before_vat": 3300.0,
+      "vat_7": 231.0,
+      "wht": 0.0,
+      "amount": 3531.0,
+      "due_date": "",
+      "category": "ค่าบรรจุภัณฑ์/ซอง/กล่อง",
+      "paid_amount": 3531.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
