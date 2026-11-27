@@ -1712,5 +1712,6 @@
       "boost_date": "2026-10-11",
       "monthly_total": 0.0
     }
-  }
+  },
+  "reorder_contacted": {}
 }
