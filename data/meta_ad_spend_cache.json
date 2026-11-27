@@ -1,9 +1,9 @@
 {
-  "synced_at": "27/11/2026 18:48",
-  "synced_ts": 1795780101.2805328,
+  "synced_at": "28/11/2026 03:43",
+  "synced_ts": 1795812239.084796,
   "year": 2026,
   "year_th": 2569,
-  "today": "2026-11-27",
+  "today": "2026-11-28",
   "months": [
     "ม.ค.",
     "ก.พ.",
@@ -136,10 +136,10 @@
         "o": 3783,
         "h": 3879,
         "l": 2563,
-        "c": 2874,
-        "t": 87162,
-        "a": 3271,
-        "d": 26,
+        "c": 2896,
+        "t": 88010,
+        "a": 3257,
+        "d": 27,
         "p": true
       }
     ],
@@ -248,10 +248,10 @@
         "o": 422,
         "h": 422,
         "l": 185,
-        "c": 335,
-        "t": 8676,
+        "c": 331,
+        "t": 8818,
         "a": 326,
-        "d": 26,
+        "d": 27,
         "p": true
       }
     ],
@@ -360,10 +360,10 @@
         "o": 1130,
         "h": 1234,
         "l": 776,
-        "c": 995,
-        "t": 26040,
-        "a": 977,
-        "d": 26,
+        "c": 836,
+        "t": 26248,
+        "a": 971,
+        "d": 27,
         "p": true
       }
     ],
@@ -427,10 +427,10 @@
         "o": 911,
         "h": 1157,
         "l": 418,
-        "c": 469,
-        "t": 20073,
-        "a": 755,
-        "d": 26,
+        "c": 677,
+        "t": 20307,
+        "a": 752,
+        "d": 27,
         "p": true
       }
     ],
@@ -512,10 +512,10 @@
         "o": 490,
         "h": 534,
         "l": 315,
-        "c": 493,
-        "t": 11534,
+        "c": 439,
+        "t": 11649,
         "a": 431,
-        "d": 26,
+        "d": 27,
         "p": true
       }
     ],
@@ -578,11 +578,11 @@
       {
         "o": 581,
         "h": 743,
-        "l": 250,
-        "c": 250,
-        "t": 13257,
-        "a": 499,
-        "d": 26,
+        "l": 251,
+        "c": 344,
+        "t": 13331,
+        "a": 494,
+        "d": 27,
         "p": true
       }
     ],
@@ -619,10 +619,10 @@
         "o": 248,
         "h": 248,
         "l": 118,
-        "c": 190,
-        "t": 4624,
-        "a": 173,
-        "d": 26,
+        "c": 191,
+        "t": 4694,
+        "a": 174,
+        "d": 27,
         "p": true
       }
     ],
@@ -640,16 +640,16 @@
       {
         "o": 187,
         "h": 197,
-        "l": 111,
-        "c": 140,
-        "t": 2960,
-        "a": 160,
-        "d": 18,
+        "l": 79,
+        "c": 79,
+        "t": 2962,
+        "a": 156,
+        "d": 19,
         "p": true
       }
     ]
   },
-  "grand_total": 627973,
+  "grand_total": 628821,
   "live_campaigns": [
     {
       "id": "120239455647850748",
@@ -658,11 +658,11 @@
       "name": "Real_ PLP",
       "status": "ACTIVE",
       "daily_budget": 960.0,
-      "spend_today": 646.39,
-      "msgs_today": 76,
-      "spend_7d": 7007.01,
-      "msgs_7d": 702,
-      "cost_per_msg_7d": 10.0
+      "spend_today": 17.45,
+      "msgs_today": 3,
+      "spend_7d": 6887.88,
+      "msgs_7d": 710,
+      "cost_per_msg_7d": 9.7
     },
     {
       "id": "120246726430320764",
@@ -671,11 +671,11 @@
       "name": "Realถูกดีจริง",
       "status": "ACTIVE",
       "daily_budget": 760.0,
-      "spend_today": 455.23,
-      "msgs_today": 75,
-      "spend_7d": 5358.38,
-      "msgs_7d": 740,
-      "cost_per_msg_7d": 7.2
+      "spend_today": 12.87,
+      "msgs_today": 1,
+      "spend_7d": 5507.63,
+      "msgs_7d": 775,
+      "cost_per_msg_7d": 7.1
     },
     {
       "id": "120246263223520734",
@@ -684,11 +684,11 @@
       "name": "Realโรงงาน",
       "status": "ACTIVE",
       "daily_budget": 474.49,
-      "spend_today": 333.51,
-      "msgs_today": 63,
-      "spend_7d": 3415.35,
-      "msgs_7d": 630,
-      "cost_per_msg_7d": 5.4
+      "spend_today": 10.18,
+      "msgs_today": 3,
+      "spend_7d": 3443.51,
+      "msgs_7d": 644,
+      "cost_per_msg_7d": 5.3
     },
     {
       "id": "120252913819210209",
@@ -697,10 +697,10 @@
       "name": "Real 25/8/2569 - ถูกเว้ย",
       "status": "ACTIVE",
       "daily_budget": 320.0,
-      "spend_today": 273.94,
-      "msgs_today": 46,
-      "spend_7d": 2670.51,
-      "msgs_7d": 481,
+      "spend_today": 4.69,
+      "msgs_today": 2,
+      "spend_7d": 2561.25,
+      "msgs_7d": 457,
       "cost_per_msg_7d": 5.6
     },
     {
@@ -710,11 +710,11 @@
       "name": "STPRINT | Messages | Reel 944054261831560 | ฿200d | 2026-10-26",
       "status": "ACTIVE",
       "daily_budget": 240.0,
-      "spend_today": 119.31,
+      "spend_today": 7.09,
       "msgs_today": 1,
-      "spend_7d": 1438.95,
-      "msgs_7d": 68,
-      "cost_per_msg_7d": 21.2
+      "spend_7d": 1486.01,
+      "msgs_7d": 62,
+      "cost_per_msg_7d": 24.0
     },
     {
       "id": "120252661451280734",
@@ -723,11 +723,11 @@
       "name": "ปริ้นฉลาก8/10/2026",
       "status": "ACTIVE",
       "daily_budget": 204.0,
-      "spend_today": 123.05,
-      "msgs_today": 23,
-      "spend_7d": 1192.15,
-      "msgs_7d": 154,
-      "cost_per_msg_7d": 7.7
+      "spend_today": 2.83,
+      "msgs_today": 3,
+      "spend_7d": 1244.99,
+      "msgs_7d": 166,
+      "cost_per_msg_7d": 7.5
     },
     {
       "id": "120219902405220247",
@@ -736,11 +736,11 @@
       "name": "Reel",
       "status": "ACTIVE",
       "daily_budget": 144.0,
-      "spend_today": 80.77,
-      "msgs_today": 3,
-      "spend_7d": 864.72,
-      "msgs_7d": 34,
-      "cost_per_msg_7d": 25.4
+      "spend_today": 4.24,
+      "msgs_today": 0,
+      "spend_7d": 909.09,
+      "msgs_7d": 33,
+      "cost_per_msg_7d": 27.5
     },
     {
       "id": "120253725222150247",
@@ -749,11 +749,11 @@
       "name": "PIMSUAY | Messages | 320 THB / 1520 labels | 150 THB/day | 2026-11-04",
       "status": "PAUSED",
       "daily_budget": 150.0,
-      "spend_today": 76.15,
-      "msgs_today": 9,
-      "spend_7d": 1063.52,
-      "msgs_7d": 79,
-      "cost_per_msg_7d": 13.5
+      "spend_today": 0.0,
+      "msgs_today": 0,
+      "spend_7d": 1019.87,
+      "msgs_7d": 83,
+      "cost_per_msg_7d": 12.3
     },
     {
       "id": "120254299732080209",
@@ -764,9 +764,9 @@
       "daily_budget": 150.0,
       "spend_today": 0.0,
       "msgs_today": 0,
-      "spend_7d": 445.76,
-      "msgs_7d": 9,
-      "cost_per_msg_7d": 49.5
+      "spend_7d": 342.35,
+      "msgs_7d": 8,
+      "cost_per_msg_7d": 42.8
     }
   ],
   "live_pages": [
@@ -775,84 +775,84 @@
       "active_campaigns": 1,
       "paused_campaigns": 0,
       "active_daily_budget": 960.0,
-      "spend_today": 646.39,
-      "msgs_today": 76,
-      "spend_7d": 7007.01,
-      "msgs_7d": 702,
-      "spend_mtd": 26039.98,
-      "cost_per_msg_7d": 10.0
+      "spend_today": 17.45,
+      "msgs_today": 3,
+      "spend_7d": 6887.88,
+      "msgs_7d": 710,
+      "spend_mtd": 26247.8,
+      "cost_per_msg_7d": 9.7
     },
     {
       "channel": "เพจ ถูกดีจริง",
       "active_campaigns": 1,
       "paused_campaigns": 0,
       "active_daily_budget": 760.0,
-      "spend_today": 455.23,
-      "msgs_today": 75,
-      "spend_7d": 5358.38,
-      "msgs_7d": 740,
-      "spend_mtd": 20072.86,
-      "cost_per_msg_7d": 7.2
+      "spend_today": 12.87,
+      "msgs_today": 1,
+      "spend_7d": 5507.63,
+      "msgs_7d": 775,
+      "spend_mtd": 20307.05,
+      "cost_per_msg_7d": 7.1
     },
     {
       "channel": "เพจ โรงงาน25",
       "active_campaigns": 1,
       "paused_campaigns": 0,
       "active_daily_budget": 474.49,
-      "spend_today": 333.51,
-      "msgs_today": 63,
-      "spend_7d": 3415.35,
-      "msgs_7d": 630,
-      "spend_mtd": 11533.59,
-      "cost_per_msg_7d": 5.4
+      "spend_today": 10.18,
+      "msgs_today": 3,
+      "spend_7d": 3443.51,
+      "msgs_7d": 644,
+      "spend_mtd": 11649.39,
+      "cost_per_msg_7d": 5.3
     },
     {
       "channel": "เพจ ST",
       "active_campaigns": 2,
       "paused_campaigns": 0,
       "active_daily_budget": 384.0,
-      "spend_today": 200.08,
-      "msgs_today": 4,
-      "spend_7d": 2303.67,
-      "msgs_7d": 102,
-      "spend_mtd": 8675.61,
-      "cost_per_msg_7d": 22.6
+      "spend_today": 11.33,
+      "msgs_today": 1,
+      "spend_7d": 2395.1,
+      "msgs_7d": 95,
+      "spend_mtd": 8817.66,
+      "cost_per_msg_7d": 25.2
     },
     {
       "channel": "เพจ ถูกเว้ย25",
       "active_campaigns": 1,
       "paused_campaigns": 1,
       "active_daily_budget": 320.0,
-      "spend_today": 273.94,
-      "msgs_today": 46,
-      "spend_7d": 3116.27,
-      "msgs_7d": 490,
-      "spend_mtd": 13256.58,
-      "cost_per_msg_7d": 6.4
+      "spend_today": 4.69,
+      "msgs_today": 2,
+      "spend_7d": 2903.6,
+      "msgs_7d": 465,
+      "spend_mtd": 13331.21,
+      "cost_per_msg_7d": 6.2
     },
     {
       "channel": "ปริ้นฉลาก",
       "active_campaigns": 1,
       "paused_campaigns": 0,
       "active_daily_budget": 204.0,
-      "spend_today": 123.05,
-      "msgs_today": 23,
-      "spend_7d": 1192.15,
-      "msgs_7d": 154,
-      "spend_mtd": 4623.63,
-      "cost_per_msg_7d": 7.7
+      "spend_today": 2.83,
+      "msgs_today": 3,
+      "spend_7d": 1244.99,
+      "msgs_7d": 166,
+      "spend_mtd": 4694.46,
+      "cost_per_msg_7d": 7.5
     },
     {
       "channel": "พิมพ์สวยการพิมพ์",
       "active_campaigns": 0,
       "paused_campaigns": 1,
       "active_daily_budget": 0.0,
-      "spend_today": 76.15,
-      "msgs_today": 9,
-      "spend_7d": 1063.52,
-      "msgs_7d": 79,
-      "spend_mtd": 2960.01,
-      "cost_per_msg_7d": 13.5
+      "spend_today": 0.0,
+      "msgs_today": 0,
+      "spend_7d": 1019.87,
+      "msgs_7d": 83,
+      "spend_mtd": 2962.4,
+      "cost_per_msg_7d": 12.3
     }
   ]
 }
