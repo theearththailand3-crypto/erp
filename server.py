@@ -1980,6 +1980,150 @@ def sync_meta_ad_spend(year: int | None = None, force: bool = False) -> dict[str
         for ch in sorted(daily_spend.keys(), key=lambda c: -sum(daily_spend[c].values())):
             series[ch] = _build_monthly(daily_spend[ch])
 
+        # Fetch live campaign statuses, daily budgets, today & last_7d spend/messages per account
+        def _extract_msgs(actions: list[dict[str, Any]] | None) -> int:
+            if not actions:
+                return 0
+            for target in (
+                "onsite_conversion.messaging_conversation_started_7d",
+                "onsite_conversion.messaging_first_reply",
+                "onsite_conversion.total_messaging_connection",
+            ):
+                for act in actions:
+                    if act.get("action_type") == target:
+                        try:
+                            return int(float(act.get("value") or 0))
+                        except Exception:
+                            return 0
+            return 0
+
+        def _fetch_insights_preset(aid_str: str, preset: str) -> dict[str, tuple[float, int]]:
+            out_map: dict[str, tuple[float, int]] = {}
+            try:
+                qs_i = urllib.parse.urlencode(
+                    {
+                        "access_token": tok,
+                        "level": "campaign",
+                        "date_preset": preset,
+                        "fields": "campaign_id,campaign_name,spend,actions",
+                        "limit": 200,
+                    }
+                )
+                req_i = urllib.request.Request(f"{api_base}/{aid_str}/insights?{qs_i}", headers={"User-Agent": "stprint-erp/1.0"})
+                with urllib.request.urlopen(req_i, timeout=30) as resp_i:
+                    di = json.loads(resp_i.read().decode("utf-8"))
+                for row in di.get("data") or []:
+                    cid_i = str(row.get("campaign_id") or "").strip()
+                    if cid_i:
+                        out_map[cid_i] = (float(row.get("spend") or 0.0), _extract_msgs(row.get("actions")))
+            except Exception:
+                pass
+            return out_map
+
+        live_campaigns: list[dict[str, Any]] = []
+        page_agg: dict[str, dict[str, Any]] = {}
+        for ch_k, day_m in daily_spend.items():
+            mtd_sum = sum(v for d_k, v in day_m.items() if d_k.startswith(cur_month_key))
+            page_agg[ch_k] = {
+                "channel": ch_k,
+                "active_campaigns": 0,
+                "paused_campaigns": 0,
+                "active_daily_budget": 0.0,
+                "spend_today": 0.0,
+                "msgs_today": 0,
+                "spend_7d": 0.0,
+                "msgs_7d": 0,
+                "spend_mtd": round(mtd_sum, 2),
+            }
+
+        for acc in accounts:
+            aid = str(acc.get("id") or "").strip()
+            aname = str(acc.get("name") or "").strip()
+            if not aid:
+                continue
+            today_map = _fetch_insights_preset(aid, "today")
+            d7_map = _fetch_insights_preset(aid, "last_7d")
+            try:
+                qs_c = urllib.parse.urlencode(
+                    {
+                        "access_token": tok,
+                        "fields": "id,name,status,effective_status,daily_budget,objective,adsets.limit(50){daily_budget,effective_status}",
+                        "effective_status": json.dumps(["ACTIVE", "PAUSED", "CAMPAIGN_PAUSED", "IN_PROCESS", "WITH_ISSUES"]),
+                        "limit": 100,
+                    }
+                )
+                req_c = urllib.request.Request(f"{api_base}/{aid}/campaigns?{qs_c}", headers={"User-Agent": "stprint-erp/1.0"})
+                with urllib.request.urlopen(req_c, timeout=30) as resp_c:
+                    dc = json.loads(resp_c.read().decode("utf-8"))
+                for camp in dc.get("data") or []:
+                    cid = str(camp.get("id") or "").strip()
+                    cname = str(camp.get("name") or "").strip()
+                    eff_st = str(camp.get("effective_status") or camp.get("status") or "").upper()
+                    c_budget = float(camp.get("daily_budget") or 0) / 100.0
+                    adsets_data = ((camp.get("adsets") or {}).get("data")) or []
+                    if c_budget <= 0 and adsets_data:
+                        act_b = sum(
+                            float(a.get("daily_budget") or 0) / 100.0
+                            for a in adsets_data
+                            if str(a.get("effective_status") or "").upper() == "ACTIVE"
+                        )
+                        c_budget = act_b if act_b > 0 else sum(float(a.get("daily_budget") or 0) / 100.0 for a in adsets_data)
+                    sp_today, msgs_today = today_map.get(cid, (0.0, 0))
+                    sp_7d, msgs_7d = d7_map.get(cid, (0.0, 0))
+                    is_active = eff_st == "ACTIVE"
+                    if not is_active and sp_7d <= 0 and sp_today <= 0:
+                        continue
+                    ch = _map_channel(aname, cname)
+                    rec_c = {
+                        "id": cid,
+                        "account": aname,
+                        "channel": ch,
+                        "name": cname,
+                        "status": eff_st,
+                        "daily_budget": round(c_budget, 2),
+                        "spend_today": round(sp_today, 2),
+                        "msgs_today": msgs_today,
+                        "spend_7d": round(sp_7d, 2),
+                        "msgs_7d": msgs_7d,
+                        "cost_per_msg_7d": round(sp_7d / msgs_7d, 1) if msgs_7d > 0 else 0.0,
+                    }
+                    live_campaigns.append(rec_c)
+                    pa = page_agg.setdefault(
+                        ch,
+                        {
+                            "channel": ch,
+                            "active_campaigns": 0,
+                            "paused_campaigns": 0,
+                            "active_daily_budget": 0.0,
+                            "spend_today": 0.0,
+                            "msgs_today": 0,
+                            "spend_7d": 0.0,
+                            "msgs_7d": 0,
+                            "spend_mtd": 0.0,
+                        },
+                    )
+                    if is_active:
+                        pa["active_campaigns"] += 1
+                        pa["active_daily_budget"] += c_budget
+                    else:
+                        pa["paused_campaigns"] += 1
+                    pa["spend_today"] += sp_today
+                    pa["msgs_today"] += msgs_today
+                    pa["spend_7d"] += sp_7d
+                    pa["msgs_7d"] += msgs_7d
+            except Exception:
+                pass
+
+        live_campaigns.sort(key=lambda x: (0 if x["status"] == "ACTIVE" else 1, -x["spend_7d"], -x["daily_budget"]))
+        live_pages: list[dict[str, Any]] = []
+        for pa in page_agg.values():
+            pa["active_daily_budget"] = round(pa["active_daily_budget"], 2)
+            pa["spend_today"] = round(pa["spend_today"], 2)
+            pa["spend_7d"] = round(pa["spend_7d"], 2)
+            pa["cost_per_msg_7d"] = round(pa["spend_7d"] / pa["msgs_7d"], 1) if pa["msgs_7d"] > 0 else 0.0
+            live_pages.append(pa)
+        live_pages.sort(key=lambda x: (-x["active_daily_budget"], -x["spend_7d"], -x["spend_mtd"]))
+
         payload = {
             "synced_at": now_bkk.strftime("%d/%m/%Y %H:%M"),
             "synced_ts": now_ts,
@@ -1990,6 +2134,8 @@ def sync_meta_ad_spend(year: int | None = None, force: bool = False) -> dict[str
             "keys": all_months,
             "series": series,
             "grand_total": round(sum(daily_total.values())),
+            "live_campaigns": live_campaigns,
+            "live_pages": live_pages,
         }
         tmp_path = META_ADS_CACHE_PATH.with_suffix(".tmp")
         tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
