@@ -927,6 +927,34 @@
         <div id="verticalCandleContainer" style="width:100%;overflow-x:auto;padding:12px 6px 4px;"></div>
       </div>
 
+      <!-- Monthly Meta Ad Spend Candlestick & Monthly Comparison Card -->
+      <div class="card" id="metaAdSpendCard">
+        <div class="card-header">
+          <div>
+            <div class="card-title">📣 กราฟแท่งเทียนค่าแอด Meta รายเดือนแยกตามเพจ (OHLC + ยอดรวมรายเดือน)</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+              ดึงยอดจ่ายค่าแอดจริงจาก Meta API • 🟢 เขียว = ขยายงบในเดือน (ปิด ≥ เปิด) • 🔴 แดง = ลดงบในเดือน • เส้นประส้ม = เฉลี่ย/วัน • แท่งล่าง = ยอดรวมเดือน
+              <span id="metaAdSyncTime" style="margin-left:6px;font-weight:600;color:#2563eb;"></span>
+            </div>
+          </div>
+          <div class="toolbar">
+            <button class="btn btn-primary btn-sm" id="btnMetaAdCandle" onclick="setMetaAdMode('candle')">🕯️ แท่งเทียน (OHLC)</button>
+            <button class="btn btn-outline btn-sm" id="btnMetaAdBar" onclick="setMetaAdMode('bar')">📊 แท่งรวม/เดือน</button>
+            <button class="btn btn-success btn-sm" id="btnMetaAdSync" onclick="syncMetaAdSpend()">🔄 ซิงก์ค่าแอด Meta สด</button>
+          </div>
+        </div>
+        <div id="metaAdPageTabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+        <div id="metaAdKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-bottom:12px;"></div>
+        <div id="metaAdChartWrap" style="position:relative;width:100%;height:320px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:6px;">
+          <canvas id="metaAdCanvas" style="display:block;width:100%;height:100%;cursor:crosshair;"></canvas>
+          <div id="metaAdTooltip" style="display:none;pointer-events:none;position:absolute;z-index:25;background:#ffffff;color:#0f172a;border:1px solid #cbd5e1;border-radius:10px;padding:9px 11px;font-size:12px;box-shadow:0 10px 26px rgba(15,23,42,0.16);min-width:210px;"></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:11.5px;color:var(--muted);">
+          <div id="metaAdLegend" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;"></div>
+          <div id="metaAdFootnote">*เดือนปัจจุบันคำนวณแท่งเทียนจากวันที่ปิดวันแล้ว (ยอดรวมนับถึงวันนี้)</div>
+        </div>
+      </div>
+
       <div class="grid-2">
         <!-- Summary by 8 Pages + Ad Spend -->
         <div class="card">
@@ -2029,7 +2057,7 @@
         }
         return new Response(JSON.stringify({ ok: false, error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
-      if (url === '/api/sync' || url === '/api/myorder/sync' || url === '/api/expense/sync') {
+      if (url === '/api/sync' || url === '/api/myorder/sync' || url === '/api/expense/sync' || url === '/api/meta_ads/sync') {
         const st = await _fetchCloudSnapshot();
         return new Response(JSON.stringify({ ok: true, state: st }), { status: 200, headers: { 'Content-Type': 'application/json' } });
       }
@@ -2083,6 +2111,7 @@
       stock_movements: [],
       customers: [],
       material_breakdown: {},
+      meta_ad_spend: null,
       users: DEFAULT_USERS_FALLBACK
     };
     let CURRENT_USER = null;
@@ -4212,6 +4241,453 @@
       renderAdminBoardTab();
     }
 
+    // ---------- Monthly Meta Ad Spend Candlestick (OHLC) & Monthly Bar Chart ----------
+    let _metaAdPage = 'รวมทุกเพจ';
+    let _metaAdMode = 'candle'; // 'candle' | 'bar'
+    let _metaAdHoverIdx = -1;
+    let _metaAdBound = false;
+    const _META_AD_PALETTE = ['#2563eb', '#16a34a', '#f59e0b', '#7c3aed', '#ec4899', '#0891b2', '#ea580c'];
+    const _META_AD_SHORT = {
+      'รวมทุกเพจ': 'รวมทุกเพจ',
+      'เพจ ST': 'ST',
+      'เพจ PLP': 'PLP',
+      'เพจ ถูกดีจริง': 'ถูกดีจริง',
+      'เพจ โรงงาน25': 'โรงงาน25',
+      'เพจ ถูกเว้ย25': 'ถูกเว้ย25',
+      'ปริ้นฉลาก': 'ปริ้นฉลาก',
+      'พิมพ์สวยการพิมพ์': 'พิมพ์สวยฯ',
+    };
+
+    function _fmtBahtShort(n) {
+      n = Number(n || 0);
+      if (n >= 100000) return '฿' + (n / 1000).toFixed(0) + 'k';
+      if (n >= 1000) return '฿' + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+      return '฿' + Math.round(n);
+    }
+
+    function setMetaAdMode(m) {
+      _metaAdMode = m;
+      const bC = document.getElementById('btnMetaAdCandle');
+      const bB = document.getElementById('btnMetaAdBar');
+      if (bC) bC.className = m === 'candle' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+      if (bB) bB.className = m === 'bar' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+      renderMetaAdSpendSection();
+    }
+
+    function setMetaAdPage(pg) {
+      _metaAdPage = pg;
+      renderMetaAdSpendSection();
+    }
+
+    async function syncMetaAdSpend() {
+      const btn = document.getElementById('btnMetaAdSync');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังดึง Meta API...'; }
+      try {
+        const r = await fetch('/api/meta_ads/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const j = await r.json();
+        if (j && j.ok && j.state) {
+          STATE = j.state;
+          renderAll();
+          if (typeof showToast === 'function') showToast('✅ ซิงก์ค่าแอด Meta รายเดือนครบทุกเพจแล้ว');
+        } else {
+          alert('ซิงก์ค่าแอด Meta ไม่สำเร็จ: ' + ((j && j.error) || 'unknown'));
+        }
+      } catch (e) {
+        alert('ซิงก์ค่าแอด Meta ไม่สำเร็จ: ' + e);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 ซิงก์ค่าแอด Meta สด'; }
+      }
+    }
+
+    function _bindMetaAdCanvasEvents() {
+      if (_metaAdBound) return;
+      const wrap = document.getElementById('metaAdChartWrap');
+      const canvas = document.getElementById('metaAdCanvas');
+      if (!wrap || !canvas) return;
+      _metaAdBound = true;
+
+      const handlePoint = (clientX, clientY) => {
+        const md = STATE.meta_ad_spend;
+        if (!md || !md.months || !md.months.length) return;
+        const rect = canvas.getBoundingClientRect();
+        const padL = 58, padR = 14;
+        const plotW = Math.max(120, rect.width - padL - padR);
+        const stepX = plotW / md.months.length;
+        const idx = Math.floor((clientX - rect.left - padL) / stepX);
+        const nextIdx = (idx >= 0 && idx < md.months.length) ? idx : -1;
+        if (nextIdx !== _metaAdHoverIdx) {
+          _metaAdHoverIdx = nextIdx;
+          drawMetaAdSpendCanvas();
+        }
+        _showMetaAdTooltip(nextIdx, clientX, clientY);
+      };
+
+      canvas.addEventListener('mousemove', (e) => handlePoint(e.clientX, e.clientY));
+      canvas.addEventListener('click', (e) => handlePoint(e.clientX, e.clientY));
+      canvas.addEventListener('mouseleave', () => {
+        _metaAdHoverIdx = -1;
+        const tip = document.getElementById('metaAdTooltip');
+        if (tip) tip.style.display = 'none';
+        drawMetaAdSpendCanvas();
+      });
+      if (typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(() => {
+          if (currentTab === 'adminboard') drawMetaAdSpendCanvas();
+        }).observe(wrap);
+      }
+    }
+
+    function _showMetaAdTooltip(idx, clientX, clientY) {
+      const tip = document.getElementById('metaAdTooltip');
+      const wrap = document.getElementById('metaAdChartWrap');
+      const md = STATE.meta_ad_spend;
+      if (!tip || !wrap || !md || !md.series) return;
+      const arr = md.series[_metaAdPage] || [];
+      const v = (idx >= 0 && idx < arr.length) ? arr[idx] : null;
+      if (!v) { tip.style.display = 'none'; return; }
+
+      const prev = idx > 0 ? arr[idx - 1] : null;
+      const diffPct = (prev && prev.t > 0) ? ((v.t - prev.t) / prev.t * 100) : null;
+      const diffHtml = diffPct === null ? '' : `<span style="font-weight:700;color:${diffPct >= 0 ? '#16a34a' : '#dc2626'};">(${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(0)}%)</span>`;
+      const yrTh = md.year_th || (Number(md.year || 2026) + 543);
+      const shortName = _META_AD_SHORT[_metaAdPage] || _metaAdPage;
+      const subPages = Object.keys(md.series).filter(k => k !== 'รวมทุกเพจ');
+
+      let html = `
+        <div style="display:flex;justify-content:space-between;gap:10px;padding-bottom:5px;margin-bottom:5px;border-bottom:1px solid #e2e8f0;">
+          <strong>${esc(md.months[idx])} ${yrTh} • ${esc(shortName)}</strong>
+          <span style="color:#64748b;">${v.d} วัน</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:5px;">
+          <span style="color:#64748b;">ยอดจ่ายรวมเดือน</span>
+          <strong style="color:#0f172a;">฿${fmtInt(v.t)} ${diffHtml}</strong>
+        </div>
+      `;
+
+      if (_metaAdMode === 'candle') {
+        const up = v.c >= v.o;
+        html += `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;padding-top:5px;border-top:1px solid #e2e8f0;font-variant-numeric:tabular-nums;">
+            <span style="color:#64748b;">เปิด (O): <b style="color:#0f172a;">฿${fmtInt(v.o)}</b></span>
+            <span style="color:#64748b;">สูงสุด (H): <b style="color:#0f172a;">฿${fmtInt(v.h)}</b></span>
+            <span style="color:#64748b;">ปิด (C): <b style="color:${up ? '#16a34a' : '#dc2626'};">฿${fmtInt(v.c)}</b></span>
+            <span style="color:#64748b;">ต่ำสุด (L): <b style="color:#0f172a;">฿${fmtInt(v.l)}</b></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;gap:12px;padding-top:5px;margin-top:5px;border-top:1px solid #e2e8f0;">
+            <span style="color:#64748b;">เฉลี่ยต่อวัน</span>
+            <strong style="color:#d97706;">฿${fmtInt(v.a)}/วัน</strong>
+          </div>
+        `;
+      } else if (_metaAdPage === 'รวมทุกเพจ') {
+        const rows = subPages
+          .map((sp, sIdx) => ({ sp, sv: (md.series[sp] || [])[idx], col: _META_AD_PALETTE[sIdx % _META_AD_PALETTE.length] }))
+          .filter(x => x.sv && x.sv.t > 0)
+          .sort((a, b) => b.sv.t - a.sv.t);
+        html += `<div style="padding-top:5px;border-top:1px solid #e2e8f0;display:flex;flex-direction:column;gap:3px;">` + rows.map(x => `
+          <div style="display:flex;justify-content:space-between;gap:12px;">
+            <span style="display:inline-flex;align-items:center;gap:5px;color:#475569;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${x.col};"></span>${esc(_META_AD_SHORT[x.sp] || x.sp)}
+            </span>
+            <span style="font-weight:600;">฿${fmtInt(x.sv.t)}</span>
+          </div>
+        `).join('') + `</div>`;
+      } else {
+        html += `
+          <div style="display:flex;justify-content:space-between;gap:12px;padding-top:5px;border-top:1px solid #e2e8f0;">
+            <span style="color:#64748b;">เฉลี่ยต่อวัน</span>
+            <strong>฿${fmtInt(v.a)}/วัน</strong>
+          </div>
+        `;
+      }
+
+      tip.innerHTML = html;
+      tip.style.display = 'block';
+      const wRect = wrap.getBoundingClientRect();
+      const tw = tip.offsetWidth || 220;
+      const th = tip.offsetHeight || 130;
+      let left = clientX - wRect.left + 14;
+      if (left + tw > wRect.width - 6) left = clientX - wRect.left - tw - 14;
+      left = Math.max(6, left);
+      let top = clientY - wRect.top - 14;
+      if (top + th > wRect.height - 6) top = wRect.height - th - 6;
+      top = Math.max(6, top);
+      tip.style.left = left + 'px';
+      tip.style.top = top + 'px';
+    }
+
+    function drawMetaAdSpendCanvas() {
+      const canvas = document.getElementById('metaAdCanvas');
+      const wrap = document.getElementById('metaAdChartWrap');
+      const md = STATE.meta_ad_spend;
+      if (!canvas || !wrap || !md || !md.months || !md.months.length) return;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width < 40 || rect.height < 40) return;
+
+      const W = Math.floor(rect.width);
+      const H = Math.floor(rect.height);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+
+      const padL = 58, padR = 14, padT = 16, padB = 26;
+      const plotW = Math.max(120, W - padL - padR);
+      const n = md.months.length;
+      const stepX = plotW / n;
+      const arr = (md.series || {})[_metaAdPage] || [];
+      const subPages = Object.keys(md.series || {}).filter(k => k !== 'รวมทุกเพจ');
+
+      if (_metaAdHoverIdx >= 0 && _metaAdHoverIdx < n) {
+        ctx.fillStyle = 'rgba(37, 99, 235, 0.08)';
+        ctx.fillRect(padL + _metaAdHoverIdx * stepX, padT, stepX, H - padT - padB);
+      }
+
+      if (_metaAdMode === 'candle') {
+        const candleH = Math.floor((H - padT - padB) * 0.67);
+        const gapPane = 12;
+        const volTop = padT + candleH + gapPane;
+        const volH = Math.max(38, H - padB - volTop);
+        const maxDaily = Math.max(200, ...arr.map(v => v ? v.h : 0)) * 1.12;
+        const maxVol = Math.max(1000, ...arr.map(v => v ? v.t : 0)) * 1.16;
+        const yDaily = (val) => padT + candleH - (val / maxDaily) * candleH;
+        const yVol = (val) => volTop + volH - (val / maxVol) * volH;
+
+        ctx.font = '11px Prompt, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let i = 0; i <= 4; i++) {
+          const val = (maxDaily / 4) * i;
+          const y = Math.round(yDaily(val)) + 0.5;
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(padL, y);
+          ctx.lineTo(W - padR, y);
+          ctx.stroke();
+          ctx.fillStyle = '#64748b';
+          ctx.fillText(_fmtBahtShort(val), padL - 7, y);
+        }
+
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.beginPath();
+        ctx.moveTo(padL, volTop - 4);
+        ctx.lineTo(W - padR, volTop - 4);
+        ctx.stroke();
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(_fmtBahtShort(maxVol / 1.16), padL - 7, volTop + 6);
+        ctx.fillText('รวม/ด.', padL - 7, volTop + volH - 6);
+
+        // Dashed daily average trend line
+        ctx.save();
+        ctx.strokeStyle = '#d97706';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        let started = false;
+        arr.forEach((v, i) => {
+          if (!v) { started = false; return; }
+          const cx = padL + i * stepX + stepX / 2;
+          const cy = yDaily(v.a);
+          if (!started) { ctx.moveTo(cx, cy); started = true; }
+          else ctx.lineTo(cx, cy);
+        });
+        ctx.stroke();
+        ctx.restore();
+
+        const bodyW = Math.max(10, Math.min(30, stepX * 0.46));
+        arr.forEach((v, i) => {
+          if (!v) return;
+          const cx = padL + i * stepX + stepX / 2;
+          const isUp = v.c >= v.o;
+          const col = isUp ? '#16a34a' : '#dc2626';
+
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(cx, yDaily(v.h));
+          ctx.lineTo(cx, yDaily(v.l));
+          ctx.stroke();
+
+          const yO = yDaily(v.o), yC = yDaily(v.c);
+          const topY = Math.min(yO, yC);
+          const bh = Math.max(4, Math.abs(yC - yO));
+          ctx.fillStyle = col;
+          ctx.fillRect(cx - bodyW / 2, topY, bodyW, bh);
+
+          ctx.fillStyle = '#d97706';
+          ctx.beginPath();
+          ctx.arc(cx, yDaily(v.a), 2.8, 0, Math.PI * 2);
+          ctx.fill();
+
+          const vy = yVol(v.t);
+          const vh = Math.max(2, volTop + volH - vy);
+          ctx.fillStyle = col;
+          ctx.globalAlpha = _metaAdHoverIdx === i ? 0.85 : 0.42;
+          ctx.fillRect(cx - bodyW / 2, vy, bodyW, vh);
+          ctx.globalAlpha = 1;
+        });
+      } else {
+        const barH = H - padT - padB;
+        const maxT = Math.max(1000, ...arr.map(v => v ? v.t : 0)) * 1.16;
+        const yBar = (val) => padT + barH - (val / maxT) * barH;
+
+        ctx.font = '11px Prompt, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let i = 0; i <= 4; i++) {
+          const val = (maxT / 4) * i;
+          const y = Math.round(yBar(val)) + 0.5;
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(padL, y);
+          ctx.lineTo(W - padR, y);
+          ctx.stroke();
+          ctx.fillStyle = '#64748b';
+          ctx.fillText(_fmtBahtShort(val), padL - 7, y);
+        }
+
+        const bw = Math.max(14, Math.min(40, stepX * 0.56));
+        arr.forEach((v, i) => {
+          if (!v || v.t <= 0) return;
+          const cx = padL + i * stepX + stepX / 2;
+          if (_metaAdPage === 'รวมทุกเพจ') {
+            let acc = 0;
+            subPages.forEach((sp, sIdx) => {
+              const sv = (md.series[sp] || [])[i];
+              if (!sv || sv.t <= 0) return;
+              const y1 = yBar(acc);
+              const y2 = yBar(acc + sv.t);
+              ctx.fillStyle = _META_AD_PALETTE[sIdx % _META_AD_PALETTE.length];
+              ctx.globalAlpha = (_metaAdHoverIdx === -1 || _metaAdHoverIdx === i) ? 0.92 : 0.55;
+              ctx.fillRect(cx - bw / 2, y2, bw, Math.max(1, y1 - y2));
+              acc += sv.t;
+            });
+            ctx.globalAlpha = 1;
+          } else {
+            const y2 = yBar(v.t);
+            ctx.fillStyle = '#2563eb';
+            ctx.globalAlpha = (_metaAdHoverIdx === -1 || _metaAdHoverIdx === i) ? 0.92 : 0.6;
+            ctx.fillRect(cx - bw / 2, y2, bw, Math.max(2, padT + barH - y2));
+            ctx.globalAlpha = 1;
+          }
+          ctx.fillStyle = '#0f172a';
+          ctx.font = '600 10.5px Prompt, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(_fmtBahtShort(v.t), cx, yBar(v.t) - 3);
+        });
+      }
+
+      ctx.font = '600 11.5px Prompt, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      md.months.forEach((m, i) => {
+        const cx = padL + i * stepX + stepX / 2;
+        ctx.fillStyle = _metaAdHoverIdx === i ? '#0f172a' : '#475569';
+        ctx.fillText(m, cx, H - padB + 6);
+      });
+    }
+
+    function renderMetaAdSpendSection() {
+      const card = document.getElementById('metaAdSpendCard');
+      if (!card) return;
+      if (CURRENT_USER && CURRENT_USER.hide_money) {
+        card.style.display = 'none';
+        return;
+      }
+      card.style.display = '';
+      const md = STATE.meta_ad_spend;
+      const syncEl = document.getElementById('metaAdSyncTime');
+      const tabsEl = document.getElementById('metaAdPageTabs');
+      const kpiEl = document.getElementById('metaAdKpis');
+      const legEl = document.getElementById('metaAdLegend');
+      const wrap = document.getElementById('metaAdChartWrap');
+
+      if (!md || !md.series || !Object.keys(md.series).length) {
+        if (syncEl) syncEl.textContent = md && md.synced_at ? `(${md.synced_at})` : '(ยังไม่ได้ซิงก์)';
+        if (tabsEl) tabsEl.innerHTML = '';
+        if (kpiEl) kpiEl.innerHTML = `<div style="grid-column:1/-1;padding:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;color:#92400e;font-size:13px;">ยังไม่มีข้อมูลค่าแอด Meta รายเดือน — กดปุ่ม <strong>🔄 ซิงก์ค่าแอด Meta สด</strong> ด้านบนขวาเพื่อดึงข้อมูลจาก Meta API</div>`;
+        if (legEl) legEl.innerHTML = '';
+        return;
+      }
+
+      if (wrap) wrap.style.height = isMobileView() ? '265px' : '320px';
+      if (syncEl) syncEl.textContent = md.synced_at ? `(อัปเดต ${md.synced_at})` : '';
+      const pageKeys = Object.keys(md.series);
+      if (!md.series[_metaAdPage]) _metaAdPage = pageKeys[0];
+
+      if (tabsEl) {
+        tabsEl.innerHTML = pageKeys.map(pk => {
+          const on = pk === _metaAdPage;
+          return `<button type="button" class="btn btn-sm ${on ? 'btn-primary' : 'btn-outline'}" onclick="setMetaAdPage('${esc(pk)}')">${esc(_META_AD_SHORT[pk] || pk)}</button>`;
+        }).join('');
+      }
+
+      const arr = md.series[_metaAdPage] || [];
+      const valid = arr.map((v, i) => ({ v, i })).filter(x => x.v);
+      const ytd = valid.reduce((s, x) => s + x.v.t, 0);
+      const lastIdx = arr.length - 1;
+      const curM = lastIdx >= 0 ? arr[lastIdx] : null;
+      const prevM = lastIdx >= 1 ? arr[lastIdx - 1] : null;
+      const peak = valid.reduce((b, x) => (!b || x.v.t > b.v.t) ? x : b, null);
+      const momDaily = (curM && prevM && prevM.a > 0) ? ((curM.a - prevM.a) / prevM.a * 100) : null;
+      const momStr = momDaily === null ? '—' : `${momDaily >= 0 ? '+' : ''}${momDaily.toFixed(0)}%/วัน`;
+      const yrTh = md.year_th || (Number(md.year || 2026) + 543);
+
+      if (kpiEl) {
+        kpiEl.innerHTML = `
+          <div class="kpi-card blue" style="margin:0;padding:11px 14px;">
+            <div class="kpi-label">📣 ค่าแอดสะสมปี ${yrTh} (${valid.length} เดือน)</div>
+            <div class="kpi-value" style="font-size:20px;">฿${fmtInt(ytd)}</div>
+            <div class="kpi-sub">${esc(_metaAdPage)}</div>
+          </div>
+          <div class="kpi-card green" style="margin:0;padding:11px 14px;">
+            <div class="kpi-label">📅 เดือนล่าสุด (${esc(md.months[lastIdx] || '-')})</div>
+            <div class="kpi-value" style="font-size:20px;">฿${fmtInt(curM ? curM.t : 0)}</div>
+            <div class="kpi-sub">${curM ? `เฉลี่ย ฿${fmtInt(curM.a)}/วัน (${curM.d} วันเต็ม)` : 'ยังไม่มียอดจ่าย'}</div>
+          </div>
+          <div class="kpi-card amber" style="margin:0;padding:11px 14px;">
+            <div class="kpi-label">📊 เดือนก่อน (${esc(md.months[lastIdx - 1] || '-')})</div>
+            <div class="kpi-value" style="font-size:20px;">฿${fmtInt(prevM ? prevM.t : 0)}</div>
+            <div class="kpi-sub">เทียบเฉลี่ย/วัน: <strong style="color:${momDaily === null ? '#64748b' : (momDaily >= 0 ? '#16a34a' : '#dc2626')};">${momStr}</strong></div>
+          </div>
+          <div class="kpi-card red" style="margin:0;padding:11px 14px;">
+            <div class="kpi-label">🔥 เดือนที่จ่ายสูงสุด</div>
+            <div class="kpi-value" style="font-size:20px;">${peak ? '฿' + fmtInt(peak.v.t) : '-'}</div>
+            <div class="kpi-sub">${peak ? `${esc(md.months[peak.i].replace('*',''))} ${yrTh} • พีค ฿${fmtInt(peak.v.h)}/วัน` : '-'}</div>
+          </div>
+        `;
+      }
+
+      if (legEl) {
+        if (_metaAdMode === 'candle') {
+          legEl.innerHTML = `
+            <span><span style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px;margin-right:4px;"></span>เพิ่มงบในเดือน (ปิด ≥ เปิด)</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px;margin-right:4px;"></span>ลดงบในเดือน (ปิด &lt; เปิด)</span>
+            <span><span style="display:inline-block;width:14px;border-top:2px dashed #d97706;vertical-align:middle;margin-right:4px;"></span>เฉลี่ยต่อวัน</span>
+            <span>แท่งล่าง = ยอดรวมทั้งเดือน</span>
+          `;
+        } else if (_metaAdPage === 'รวมทุกเพจ') {
+          const subPages = pageKeys.filter(k => k !== 'รวมทุกเพจ');
+          legEl.innerHTML = subPages.map((p, idx) =>
+            `<span><span style="display:inline-block;width:10px;height:10px;background:${_META_AD_PALETTE[idx % _META_AD_PALETTE.length]};border-radius:2px;margin-right:4px;"></span>${esc(_META_AD_SHORT[p] || p)}</span>`
+          ).join('');
+        } else {
+          legEl.innerHTML = `<span><span style="display:inline-block;width:10px;height:10px;background:#2563eb;border-radius:2px;margin-right:4px;"></span>ยอดจ่ายค่าแอดรวมรายเดือน (${esc(_META_AD_SHORT[_metaAdPage] || _metaAdPage)})</span>`;
+        }
+      }
+
+      _bindMetaAdCanvasEvents();
+      requestAnimationFrame(() => drawMetaAdSpendCanvas());
+    }
+
     function renderAdminBoardTab() {
       const board = STATE.admin_board || { pages: [], admins: [], daily: [], admin_totals: {}, page_totals: {}, ad_spend: [] };
       const pages = board.pages || ['STprint', 'PLP', 'โรงงานสติ๊กเกอร์25', 'ถูกดีจริง', 'ถูกเว้ย25', 'ฉลาก25', 'พิมพ์สวย', 'ปริ้นฉลาก'];
@@ -4418,6 +4894,9 @@
           <div style="${mobile ? 'display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:6px;width:100%;' : 'display:flex;gap:10px;min-width:780px;'}">${pageCols}</div>
         `;
       }
+
+      // Render Monthly Meta Ad Spend Candlestick Card
+      renderMetaAdSpendSection();
 
       // Render 8 Pages + Ad Spend Table
       const adMap = {};
