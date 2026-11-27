@@ -1056,12 +1056,12 @@
       "id": "exp-a5bed744",
       "source": "manual",
       "sheet_tab": "ต.ค.26",
-      "seq": "58",
+      "seq": "21",
       "date": "2026-11-21",
       "bill_date": "2026-11-21",
-      "doc_no": "58",
+      "doc_no": "21",
       "tax_inv_date": "2026-11-21",
-      "tax_inv_no": "",
+      "tax_inv_no": "L2-26-11-0000778",
       "tax_id": "0105521009891",
       "branch": "สำนักงานใหญ่",
       "vendor": "บริษัท ฟูจิฟิล์ม บิสซิเนส อินโนเวชั่น จำกัด",
@@ -1075,7 +1075,7 @@
       "paid_amount": 30538.87,
       "status": "paid",
       "payment_method": "โอนเงิน",
-      "note": ""
+      "note": "เงินสดย่อย"
     },
     {
       "id": "exp-bca24692",
@@ -1331,10 +1331,10 @@
       "id": "exp-445a8c67",
       "source": "manual",
       "sheet_tab": "ต.ค.26",
-      "seq": "68",
+      "seq": "20",
       "date": "2026-11-20",
       "bill_date": "2026-11-20",
-      "doc_no": "68",
+      "doc_no": "20",
       "tax_inv_date": "2026-11-20",
       "tax_inv_no": "",
       "tax_id": "0994000165463",
@@ -1350,7 +1350,7 @@
       "paid_amount": 312.65,
       "status": "paid",
       "payment_method": "โอนเงิน",
-      "note": ""
+      "note": "เงินสดย่อย"
     },
     {
       "id": "exp-8e5abe91",
