@@ -1362,7 +1362,17 @@ def build_admin_board_state(store: dict[str, Any], orders: list[dict[str, Any]] 
             }
             for p in ADMIN_PAGES
         ]
-    ad_overrides = store.get("ad_spend_overrides") or {}
+    raw_ad_overrides = store.get("ad_spend_overrides") or {}
+    ad_overrides: dict[str, dict[str, Any]] = {}
+    for rk, rv in raw_ad_overrides.items():
+        nk = re.sub(r"ู+", "ู", str(rk or "")).strip()
+        if not nk or not isinstance(rv, dict):
+            continue
+        nv = dict(rv)
+        nv["page"] = nk
+        # Prefer canonical key over typo key if both existed
+        if nk not in ad_overrides or rk == nk:
+            ad_overrides[nk] = nv
     cur_ym = dt.date.today().strftime("%Y-%m")
     active_dates = [
         d["date"]
@@ -1372,8 +1382,12 @@ def build_admin_board_state(store: dict[str, Any], orders: list[dict[str, Any]] 
     if not active_dates:
         active_dates = [f"{cur_ym}-{day:02d}" for day in range(1, dt.date.today().day + 1)]
     seen_ad_pages: set[str] = set()
+    dedup_ad_spend: list[dict[str, Any]] = []
     for item in ad_spend_list:
-        p_key = str(item.get("page") or "").strip()
+        p_key = re.sub(r"ู+", "ู", str(item.get("page") or "")).strip()
+        if not p_key or p_key in seen_ad_pages:
+            continue
+        item["page"] = p_key
         seen_ad_pages.add(p_key)
         ov = ad_overrides.get(p_key)
         if not ov and p_key == "พิมพ์สวยการพิมพ์":
@@ -1394,17 +1408,21 @@ def build_admin_board_state(store: dict[str, Any], orders: list[dict[str, Any]] 
                 else:
                     tot_ad += base_b
             item["monthly_total"] = round(tot_ad, 2)
+        dedup_ad_spend.append(item)
+    ad_spend_list = dedup_ad_spend
     for p_key, ov in ad_overrides.items():
         if p_key not in seen_ad_pages and not (
             p_key in ("พิมพ์สวย", "พิมพ์สวยการพิมพ์")
             and ("พิมพ์สวย" in seen_ad_pages or "พิมพ์สวยการพิมพ์" in seen_ad_pages)
         ):
             item = dict(ov)
+            item["page"] = p_key
             base_b = float(item.get("daily_budget") or 0.0)
             adj_b = float(item.get("adjusted_budget") or base_b)
             b_date = str(item.get("boost_date") or "").strip()
             tot_ad = sum(adj_b if (b_date and d_s >= b_date) else base_b for d_s in active_dates)
             item["monthly_total"] = round(tot_ad, 2)
+            seen_ad_pages.add(p_key)
             ad_spend_list.append(item)
 
     return {
@@ -2635,7 +2653,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 store = _load_store()
                 ad_ov = store.setdefault("ad_spend_overrides", {})
                 for row in ads_payload:
-                    p_name = str(row.get("page") or "").strip()
+                    p_name = re.sub(r"ู+", "ู", str(row.get("page") or "")).strip()
                     if p_name:
                         ad_ov[p_name] = {
                             "page": p_name,
