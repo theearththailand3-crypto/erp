@@ -826,9 +826,10 @@
 
       <div class="card">
         <div class="card-header">
-          <div style="display:flex;align-items:center;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-primary" id="btnViewOrders" onclick="setCustomerSubView('orders')">📋 รายการสั่งซื้อ & สถานะผลิต/จัดส่ง</button>
             <button class="btn btn-outline" id="btnViewProfiles" onclick="setCustomerSubView('profiles')">👥 ทะเบียนประวัติลูกค้า (แยกตามรายคน)</button>
+            <button class="btn btn-outline" id="btnViewReorder" onclick="setCustomerSubView('reorder')">🔁 คิวทักซ้ำลูกค้าเก่า (30–60 วัน)</button>
           </div>
           <div class="toolbar" id="orderFiltersBar">
             <select id="ordTypeFilter" onchange="renderCustomerTab()">
@@ -901,6 +902,44 @@
             </thead>
             <tbody id="profileTableBody"></tbody>
           </table>
+        </div>
+
+        <!-- Subview 3: Repeat-Customer Reorder Queue (30-60 Days) -->
+        <div id="subviewReorder" style="display:none;">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+              <select id="reorderWindowFilter" onchange="renderCustomerTab()">
+                <option value="30-60" selected>🔥 30–60 วัน (จังหวะสติ๊กเกอร์ใกล้หมด)</option>
+                <option value="61-90">⏰ 61–90 วัน (ดึงลูกค้ากลับ)</option>
+                <option value="15-29">⚡ 15–29 วัน (ร้านขายดีหมดไว)</option>
+                <option value="30-120">📅 30–120 วัน (ช่วงกว้างพิเศษ)</option>
+                <option value="onetime_30_90">💎 ซื้อครั้งเดียว 30–90 วัน (ปั้นขาประจำ)</option>
+              </select>
+              <select id="reorderChannelFilter" onchange="renderCustomerTab()">
+                <option value="">ทุกเพจ / ทุกช่องทาง</option>
+              </select>
+              <select id="reorderStatusFilter" onchange="renderCustomerTab()">
+                <option value="pending" selected>⏳ เฉพาะที่ยังไม่ทัก</option>
+                <option value="all">📋 แสดงทั้งหมด</option>
+                <option value="contacted">✅ ทักแล้ว</option>
+              </select>
+              <select id="reorderSortFilter" onchange="renderCustomerTab()">
+                <option value="spent_desc" selected>💰 เรียงตามยอดซื้อสูงสุด</option>
+                <option value="orders_desc">🔁 เรียงตามสั่งบ่อยสุด</option>
+                <option value="days_asc">🕒 เพิ่งครบ 30 วันล่าสุด</option>
+              </select>
+            </div>
+            <div style="font-size:12px;color:var(--muted);">
+              💡 กด <strong>"📋 ก๊อปข้อความทัก"</strong> ระบบปรับโปรตามเพจให้อัตโนมัติ (ST = ตร.ม. 360฿ • เพจอื่น = ชุด 20/40 แผ่น)
+            </div>
+          </div>
+          <div id="reorderMiniKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px;"></div>
+          <div class="table-wrap">
+            <table>
+              <thead id="reorderTableHead"></thead>
+              <tbody id="reorderTableBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1823,6 +1862,22 @@
         for (const c of (st.customers || [])) {
           updateOrd((c.orders || []).find(x => x.id === body.id));
         }
+      } else if (path === '/api/customer/reorder_mark') {
+        st.reorder_contacted = st.reorder_contacted || {};
+        const ckey = String(body.customer_key || '').trim();
+        if (ckey) {
+          if (body.contacted === false) {
+            delete st.reorder_contacted[ckey];
+          } else {
+            const bkkToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+            st.reorder_contacted[ckey] = {
+              date: bkkToday,
+              ts: bkkToday + ' (Cloud)',
+              by: body.by || '',
+              note: body.note || ''
+            };
+          }
+        }
       } else if (path === '/api/admin_board/save_ads' && Array.isArray(body.ads)) {
         st.admin_board = st.admin_board || { pages: [], admins: [], daily: [], admin_totals: {}, page_totals: {}, ad_spend: [] };
         const adList = st.admin_board.ad_spend = st.admin_board.ad_spend || [];
@@ -2110,6 +2165,7 @@
       stock_items: [],
       stock_movements: [],
       customers: [],
+      reorder_contacted: {},
       material_breakdown: {},
       meta_ad_spend: null,
       users: DEFAULT_USERS_FALLBACK
@@ -3804,8 +3860,17 @@
       customerSubView = view;
       document.getElementById('btnViewOrders').className = view === 'orders' ? 'btn btn-primary' : 'btn btn-outline';
       document.getElementById('btnViewProfiles').className = view === 'profiles' ? 'btn btn-primary' : 'btn btn-outline';
+      const btnRe = document.getElementById('btnViewReorder');
+      if (btnRe) btnRe.className = view === 'reorder' ? 'btn btn-primary' : 'btn btn-outline';
       document.getElementById('subviewOrders').style.display = view === 'orders' ? 'block' : 'none';
       document.getElementById('subviewProfiles').style.display = view === 'profiles' ? 'block' : 'none';
+      const svRe = document.getElementById('subviewReorder');
+      if (svRe) svRe.style.display = view === 'reorder' ? 'block' : 'none';
+      const showOrdOnly = view === 'orders';
+      ['ordTypeFilter', 'ordPrepFilter', 'ordShipFilter', 'btnSyncMyOrder'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = showOrdOnly ? '' : 'none';
+      });
       renderCustomerTab();
     }
 
@@ -4031,7 +4096,7 @@
             `;
           }).join('') || `<tr><td colspan="${hideMoney ? 7 : 10}" class="text-center" style="padding:24px;color:var(--muted);">ไม่พบรายการออเดอร์ที่ค้นหา</td></tr>`;
         }
-      } else {
+      } else if (customerSubView === 'profiles') {
         const filteredCusts = STATE.customers.filter(c => {
           if (!q) return true;
           const hay = `${c.fb} ${c.recipient} ${c.phone} ${c.address} ${c.channel}`.toLowerCase();
@@ -4107,6 +4172,331 @@
             </tr>
           `).join('');
         }
+      }
+      updateReorderTabBadge();
+      if (customerSubView === 'reorder') {
+        renderReorderQueue(q);
+      }
+    }
+
+    function _getBkkTodayIso() {
+      try {
+        return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+      } catch (e) {
+        return new Date().toISOString().slice(0, 10);
+      }
+    }
+
+    function _daysBetweenIso(olderIso, newerIso) {
+      if (!olderIso || !newerIso || !/^\d{4}-\d{2}-\d{2}$/.test(olderIso)) return null;
+      const t1 = Date.parse(olderIso + 'T00:00:00Z');
+      const t2 = Date.parse(newerIso + 'T00:00:00Z');
+      if (isNaN(t1) || isNaN(t2)) return null;
+      return Math.floor((t2 - t1) / 86400000);
+    }
+
+    function _isReorderContactedForCycle(c) {
+      const rmap = STATE.reorder_contacted || {};
+      const rec = rmap[c.customer_key];
+      if (!rec || !rec.date) return null;
+      if (c.last_order_date && rec.date < c.last_order_date) return null;
+      return rec;
+    }
+
+    function _showQuickToast(msg) {
+      let el = document.getElementById('erpQuickToast');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'erpQuickToast';
+        el.style.cssText = 'position:fixed;bottom:22px;right:22px;z-index:9999;background:#0f172a;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 25px rgba(15,23,42,.28);max-width:90vw;transition:opacity .25s;';
+        document.body.appendChild(el);
+      }
+      el.textContent = msg;
+      el.style.opacity = '1';
+      clearTimeout(window._erpToastTimer);
+      window._erpToastTimer = setTimeout(() => { el.style.opacity = '0'; }, 3200);
+    }
+
+    function updateReorderTabBadge() {
+      const btn = document.getElementById('btnViewReorder');
+      if (!btn) return;
+      const todayIso = _getBkkTodayIso();
+      let readyCount = 0;
+      for (const c of (STATE.customers || [])) {
+        const d = _daysBetweenIso(c.last_order_date, todayIso);
+        if (d !== null && d >= 30 && d <= 60 && !_isReorderContactedForCycle(c)) {
+          readyCount++;
+        }
+      }
+      btn.textContent = `🔁 คิวทักซ้ำลูกค้าเก่า 30–60 วัน (${fmtInt(readyCount)})`;
+    }
+
+    function _isSqmChannel(ch) {
+      const low = String(ch || '').trim().toLowerCase();
+      if (!low) return false;
+      if (low.includes('stik') || low.includes('sticker') || low.includes('สติ๊กเกอร์')) return false;
+      return low === 'st' || low.includes('เพจ st') || low.includes('line st') || low.includes('stprint') || low.includes('st print');
+    }
+
+    function buildReorderScript(c, daysAgo) {
+      const fbRaw = String(c.fb || '').trim();
+      const firstToken = (fbRaw && fbRaw !== 'ไม่ระบุชื่อ') ? fbRaw.split(/\s+/)[0].slice(0, 24) : '';
+      const namePart = firstToken ? ` ${firstToken}` : '';
+      const jobRaw = String(c.last_job || (c.orders && c.orders[0] && c.orders[0].job) || '').trim();
+      const jobPart = jobRaw ? `ลาย "${jobRaw}" ` : '';
+      const chRaw = String(c.channel || '').trim();
+      const isSqm = _isSqmChannel(chRaw);
+      const dayPhrase = (daysAgo && daysAgo >= 20) ? `ประมาณ ${daysAgo} วันแล้ว` : 'รอบล่าสุด';
+      if (isSqm) {
+        return `สวัสดีค่าาพี่${namePart} 🥰💕 จากร้าน ST Print นะคะ\nเห็นรอบก่อนพี่สั่งพิมพ์สติ๊กเกอร์${jobPart}ไป${dayPhrase} สติ๊กเกอร์ใกล้หมดหรือยังคะ?\n✨ ทางร้านเก็บไฟล์แบบเดิมไว้ให้พร้อมสั่งผลิตทันที ไม่ต้องเสียเวลาขึ้นแบบใหม่เลยค่ะ\n🎁 โปรสั่งซ้ำสุดคุ้ม: 1 ตร.ม. 360฿ แถมฟรีอีก 1 แผ่น (A3+) • หรือสั่ง 3 ตร.ม. 1,080฿ แถมจุกๆ 6 แผ่นเลยนะคะ 🔥\nหากต้องการเติมสต๊อกกี่ ตร.ม. แจ้งหนูลงคิวพิมพ์ด่วนให้ได้เลยค่า 🚚✨`;
+      }
+      const shopLabel = chRaw ? `เพจ${chRaw.replace(/^เพจ\s*/i, '')}` : 'ร้านเรา';
+      return `สวัสดีค่าาพี่${namePart} 🥰💕 จาก${shopLabel}นะคะ\nเห็นรอบก่อนพี่สั่งพิมพ์สติ๊กเกอร์${jobPart}ไป${dayPhrase} สติ๊กเกอร์ใกล้หมดหรือยังคะ?\n✨ ทางร้านเก็บไฟล์แบบเดิมไว้ให้พร้อมสั่งผลิตทันที ไม่ต้องเสียเวลาขึ้นแบบใหม่เลยค่ะ\n🔥 โปรสั่งซ้ำสุดคุ้ม: ชุด 20 แผ่น 500฿ • หรือ โปรขายดี 40 แผ่น เพียง 999฿ จัดส่งฟรีทั่วไทย! (เฉลี่ยไม่ถึงแผ่นละ 25฿ ค่ะ 🚚)\nหากต้องการเติมสต๊อกกี่แผ่น แจ้งหนูจัดคิวพิมพ์ด่วนให้ได้เลยนะคะ 😊✨`;
+    }
+
+    async function copyReorderMessage(ckey) {
+      const c = (STATE.customers || []).find(x => x.customer_key === ckey);
+      if (!c) return;
+      const days = _daysBetweenIso(c.last_order_date, _getBkkTodayIso());
+      const msg = buildReorderScript(c, days);
+      try {
+        await navigator.clipboard.writeText(msg);
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = msg;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      const modeTag = _isSqmChannel(c.channel) ? 'โหมดตร.ม. 360฿' : 'โหมดแผ่น 25฿ / โปร 40 แผ่น 999฿';
+      _showQuickToast(`📋 ก๊อปข้อความทักซ้ำ (${modeTag}) ของ "${c.fb}" เรียบร้อย! ไปวางส่งในแชทได้เลย`);
+    }
+
+    async function toggleReorderContacted(ckey, markContacted) {
+      if (!canUserEdit()) { alert('บัญชีของคุณเป็นสิทธิ์ดูอย่างเดียว (View Only) ไม่สามารถบันทึกการทักซ้ำได้ครับ'); return; }
+      const byName = (CURRENT_USER && (CURRENT_USER.display_name || CURRENT_USER.username)) || '';
+      try {
+        const r = await fetch('/api/customer/reorder_mark', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customer_key: ckey, contacted: !!markContacted, by: byName })
+        });
+        const res = await r.json();
+        if (res.ok && res.state) {
+          STATE = res.state;
+          renderCustomerTab();
+          _showQuickToast(markContacted ? '✅ บันทึก "ทักซ้ำแล้ว" เรียบร้อย' : '↩️ ยกเลิกสถานะทักซ้ำแล้ว');
+        }
+      } catch (e) {
+        alert('บันทึกไม่สำเร็จ: ' + e);
+      }
+    }
+
+    function renderReorderQueue(q) {
+      const todayIso = _getBkkTodayIso();
+      const winVal = (document.getElementById('reorderWindowFilter') || {}).value || '30-60';
+      const chSel = document.getElementById('reorderChannelFilter');
+      const prevCh = chSel ? chSel.value : '';
+      const statusVal = (document.getElementById('reorderStatusFilter') || {}).value || 'pending';
+      const sortVal = (document.getElementById('reorderSortFilter') || {}).value || 'spent_desc';
+      const hideMoney = isMoneyHidden();
+
+      // Build channel dropdown options once/freshly from customers within 15-120 days
+      const chCounts = {};
+      for (const c of (STATE.customers || [])) {
+        const d = _daysBetweenIso(c.last_order_date, todayIso);
+        if (d !== null && d >= 15 && d <= 120) {
+          const ch = String(c.channel || 'ไม่ระบุเพจ').trim() || 'ไม่ระบุเพจ';
+          chCounts[ch] = (chCounts[ch] || 0) + 1;
+        }
+      }
+      if (chSel) {
+        const sortedCh = Object.entries(chCounts).sort((a, b) => b[1] - a[1]);
+        chSel.innerHTML = `<option value="">ทุกเพจ / ทุกช่องทาง</option>` +
+          sortedCh.map(([ch, cnt]) => `<option value="${esc(ch)}"${ch === prevCh ? ' selected' : ''}>${esc(ch)} (${fmtInt(cnt)})</option>`).join('');
+        if (prevCh && !chCounts[prevCh]) chSel.value = '';
+      }
+      const chFilter = chSel ? chSel.value : '';
+
+      const inWindow = [];
+      for (const c of (STATE.customers || [])) {
+        const d = _daysBetweenIso(c.last_order_date, todayIso);
+        if (d === null || d < 0) continue;
+        let okWin = false;
+        if (winVal === '30-60') okWin = (d >= 30 && d <= 60);
+        else if (winVal === '61-90') okWin = (d >= 61 && d <= 90);
+        else if (winVal === '15-29') okWin = (d >= 15 && d <= 29);
+        else if (winVal === '30-120') okWin = (d >= 30 && d <= 120);
+        else if (winVal === 'onetime_30_90') okWin = (d >= 30 && d <= 90 && Number(c.order_count || 0) === 1);
+        if (!okWin) continue;
+        const ch = String(c.channel || 'ไม่ระบุเพจ').trim() || 'ไม่ระบุเพจ';
+        if (chFilter && ch !== chFilter) continue;
+        if (q) {
+          const hay = `${c.fb} ${c.recipient} ${c.phone} ${c.channel} ${c.last_job || ''}`.toLowerCase();
+          if (!hay.includes(q)) continue;
+        }
+        const rec = _isReorderContactedForCycle(c);
+        inWindow.push({ c, daysAgo: d, contactedRec: rec });
+      }
+
+      const pendingTotal = inWindow.filter(x => !x.contactedRec).length;
+      const contactedTotal = inWindow.filter(x => !!x.contactedRec).length;
+      const sumSpentAll = inWindow.reduce((s, x) => s + Number(x.c.total_spent || 0), 0);
+      const avgTicket = inWindow.length ? (sumSpentAll / Math.max(1, inWindow.reduce((s, x) => s + Math.max(1, Number(x.c.order_count || 1)), 0))) : 0;
+      const estRevenue10Pct = pendingTotal * 0.10 * Math.max(320, avgTicket);
+
+      const miniBox = document.getElementById('reorderMiniKpis');
+      if (miniBox) {
+        miniBox.innerHTML = `
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;">
+            <div style="font-size:11.5px;color:#1e40af;font-weight:600;">⏳ รอแอดมินทักซ้ำ</div>
+            <div style="font-size:20px;font-weight:800;color:#1d4ed8;">${fmtInt(pendingTotal)} คน</div>
+            <div style="font-size:11px;color:#64748b;">จากกลุ่มนี้ทั้งหมด ${fmtInt(inWindow.length)} คน</div>
+          </div>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 12px;">
+            <div style="font-size:11.5px;color:#166534;font-weight:600;">✅ ทักซ้ำไปแล้ว</div>
+            <div style="font-size:20px;font-weight:800;color:#15803d;">${fmtInt(contactedTotal)} คน</div>
+            <div style="font-size:11px;color:#64748b;">คืบหน้า ${inWindow.length ? ((contactedTotal / inWindow.length) * 100).toFixed(1) : '0.0'}%</div>
+          </div>
+          ${hideMoney ? '' : `
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;">
+            <div style="font-size:11.5px;color:#92400e;font-weight:600;">💰 ยอดซื้อสะสมของกลุ่มนี้</div>
+            <div style="font-size:20px;font-weight:800;color:#b45309;">฿${fmtMoney(sumSpentAll)}</div>
+            <div style="font-size:11px;color:#64748b;">เฉลี่ย ฿${fmtInt(avgTicket)}/ออเดอร์</div>
+          </div>
+          <div style="background:#fdf4ff;border:1px solid #f5d0fe;border-radius:10px;padding:10px 12px;">
+            <div style="font-size:11.5px;color:#86198f;font-weight:600;">🎯 ถ้าปิดซ้ำได้ 10%</div>
+            <div style="font-size:20px;font-weight:800;color:#a21caf;">+฿${fmtInt(estRevenue10Pct)}</div>
+            <div style="font-size:11px;color:#64748b;">ไม่ต้องจ่ายค่าแอดเพิ่มแม้แต่บาทเดียว</div>
+          </div>
+          `}
+        `;
+      }
+
+      let rows = inWindow.filter(x => {
+        if (statusVal === 'pending') return !x.contactedRec;
+        if (statusVal === 'contacted') return !!x.contactedRec;
+        return true;
+      });
+      if (sortVal === 'spent_desc') {
+        rows.sort((a, b) => (b.c.total_spent - a.c.total_spent) || (b.c.order_count - a.c.order_count));
+      } else if (sortVal === 'orders_desc') {
+        rows.sort((a, b) => (b.c.order_count - a.c.order_count) || (b.c.total_spent - a.c.total_spent));
+      } else {
+        rows.sort((a, b) => (a.daysAgo - b.daysAgo) || (b.c.total_spent - a.c.total_spent));
+      }
+
+      const thead = document.getElementById('reorderTableHead');
+      const tbody = document.getElementById('reorderTableBody');
+      if (!thead || !tbody) return;
+
+      const sliceRows = rows.slice(0, 300);
+      if (isMobileView()) {
+        thead.innerHTML = `
+          <tr>
+            <th style="width:52%;">ลูกค้า • งานล่าสุด • เพจ</th>
+            <th class="text-right" style="width:48%;">ยอดเดิม & ปุ่มทักซ้ำ</th>
+          </tr>
+        `;
+        tbody.innerHTML = sliceRows.map(({ c, daysAgo, contactedRec }) => {
+          const ckSafe = esc(c.customer_key).replace(/'/g, "\\'");
+          const lastJob = c.last_job || (c.orders && c.orders[0] && c.orders[0].job) || '-';
+          const vipBadge = Number(c.order_count || 0) >= 2
+            ? `<span class="badge b-purple">⭐ ขาประจำ ${fmtInt(c.order_count)} ครั้ง</span>`
+            : `<span class="badge b-blue">1 ครั้ง</span>`;
+          const modeBadge = _isSqmChannel(c.channel)
+            ? `<span class="badge b-amber">ตร.ม.</span>`
+            : `<span class="badge b-gray">แผ่น 25฿</span>`;
+          return `
+            <tr style="${contactedRec ? 'background:#f0fdf4;' : ''}">
+              <td>
+                <div style="font-weight:700;color:var(--primary);cursor:pointer;" onclick="openCustomerHistoryByKey('${ckSafe}')">👤 ${esc(c.fb)}</div>
+                <div style="font-size:11px;color:#334155;margin-top:2px;">🏷️ ${esc(lastJob)}</div>
+                <div style="font-size:10.5px;color:var(--muted);margin-top:2px;">${esc(c.channel || '-')} ${modeBadge} ${vipBadge}</div>
+                <div style="font-size:10.5px;color:#b45309;font-weight:600;margin-top:2px;">⏱️ สั่งล่าสุด ${esc(c.last_order_date)} (ผ่านมา ${daysAgo} วัน)</div>
+                ${c.phone ? `<div style="font-size:10.5px;color:var(--muted);">📞 ${esc(c.phone)}</div>` : ''}
+              </td>
+              <td class="text-right">
+                ${hideMoney ? '' : `<div style="font-weight:800;color:var(--success);font-size:13.5px;">฿${fmtMoney(c.total_spent)}</div>`}
+                <div style="font-size:10.5px;color:var(--muted);">รวม ${fmtInt(c.total_sheets)} แผ่น</div>
+                <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;align-items:flex-end;">
+                  <button class="btn btn-primary btn-sm" onclick="copyReorderMessage('${ckSafe}')">📋 ก๊อปข้อความทัก</button>
+                  ${canUserEdit() ? (
+                    contactedRec
+                      ? `<button class="btn btn-outline btn-sm" style="color:var(--success);border-color:#86efac;" onclick="toggleReorderContacted('${ckSafe}', false)">✅ ทักแล้ว (${esc(contactedRec.date)}) • ยกเลิก</button>`
+                      : `<button class="btn btn-outline btn-sm" onclick="toggleReorderContacted('${ckSafe}', true)">✅ กดเมื่อทักแล้ว</button>`
+                  ) : ''}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('') || `<tr><td colspan="2" class="text-center" style="padding:20px;color:var(--muted);">🎉 ไม่มีลูกค้าค้างทักในช่วงเวลานี้แล้วครับ</td></tr>`;
+      } else {
+        thead.innerHTML = `
+          <tr>
+            <th>ลูกค้า (Facebook / ผู้รับ / เบอร์)</th>
+            <th>เพจล่าสุด</th>
+            <th>งานล่าสุดที่สั่ง</th>
+            <th class="text-center">สั่งล่าสุด (ผ่านมา)</th>
+            <th class="text-center">ครั้งที่สั่ง / แผ่นสะสม</th>
+            ${hideMoney ? '' : '<th class="text-right">ยอดซื้อสะสม</th>'}
+            <th class="text-center">สถานะทักซ้ำ</th>
+            <th class="text-right">ลงมือทักซ้ำ</th>
+          </tr>
+        `;
+        tbody.innerHTML = sliceRows.map(({ c, daysAgo, contactedRec }) => {
+          const ckSafe = esc(c.customer_key).replace(/'/g, "\\'");
+          const lastJob = c.last_job || (c.orders && c.orders[0] && c.orders[0].job) || '-';
+          const vipBadge = Number(c.order_count || 0) >= 2
+            ? `<span class="badge b-purple">⭐ ขาประจำ ${fmtInt(c.order_count)} ครั้ง</span>`
+            : `<span class="badge b-blue">1 ครั้ง</span>`;
+          const dayBadgeCls = daysAgo >= 45 ? 'b-red' : (daysAgo >= 30 ? 'b-amber' : 'b-green');
+          return `
+            <tr style="${contactedRec ? 'background:#f0fdf4;' : ''}">
+              <td>
+                <div style="font-weight:700;color:var(--primary);cursor:pointer;" onclick="openCustomerHistoryByKey('${ckSafe}')">👤 ${esc(c.fb)}</div>
+                ${c.recipient ? `<div style="font-size:11.5px;color:#475569;">ผู้รับ: ${esc(c.recipient)}</div>` : ''}
+                ${c.phone ? `<div style="font-size:11px;color:var(--muted);">📞 ${esc(c.phone)}</div>` : ''}
+              </td>
+              <td>
+                <div style="font-weight:600;">${esc(c.channel || '-')}</div>
+                <div style="font-size:10.5px;color:var(--muted);">${_isSqmChannel(c.channel) ? 'โปรตร.ม. 360฿' : 'โปรแผ่น 25฿ / 999฿'}</div>
+              </td>
+              <td>
+                <div style="font-weight:600;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(lastJob)}">${esc(lastJob)}</div>
+                ${c.last_size ? `<div style="font-size:11px;color:var(--muted);">ขนาด: ${esc(c.last_size)}</div>` : ''}
+              </td>
+              <td class="text-center">
+                <div style="font-weight:600;">${esc(c.last_order_date)}</div>
+                <span class="badge ${dayBadgeCls}" style="margin-top:2px;">${daysAgo} วันที่แล้ว</span>
+              </td>
+              <td class="text-center">
+                <div>${vipBadge}</div>
+                <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">รวม ${fmtInt(c.total_sheets)} แผ่น</div>
+              </td>
+              ${hideMoney ? '' : `<td class="text-right" style="font-weight:800;color:var(--success);">฿${fmtMoney(c.total_spent)}</td>`}
+              <td class="text-center">
+                ${contactedRec
+                  ? `<span class="badge b-green">✅ ทักแล้ว</span><div style="font-size:10.5px;color:var(--muted);margin-top:2px;">${esc(contactedRec.date)}</div>`
+                  : `<span class="badge b-gray">⏳ รอทัก</span>`}
+              </td>
+              <td class="text-right">
+                <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">
+                  <button class="btn btn-primary btn-sm" onclick="copyReorderMessage('${ckSafe}')">📋 ก๊อปข้อความทัก</button>
+                  ${canUserEdit() ? (
+                    contactedRec
+                      ? `<button class="btn btn-outline btn-sm" onclick="toggleReorderContacted('${ckSafe}', false)">↩️ ยกเลิก</button>`
+                      : `<button class="btn btn-outline btn-sm" style="color:var(--success);border-color:#86efac;" onclick="toggleReorderContacted('${ckSafe}', true)">✅ ทักแล้ว</button>`
+                  ) : ''}
+                  <button class="btn btn-outline btn-sm" onclick="openCustomerHistoryByKey('${ckSafe}')">🔍</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('') || `<tr><td colspan="${hideMoney ? 7 : 8}" class="text-center" style="padding:24px;color:var(--muted);">🎉 ไม่มีลูกค้าค้างทักในช่วงเวลานี้แล้วครับ</td></tr>`;
       }
     }
 
