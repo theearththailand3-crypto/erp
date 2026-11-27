@@ -36,9 +36,14 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 STORE_PATH = DATA_DIR / "erp_store.json"
 SHEET_CACHE_PATH = DATA_DIR / "sheet_orders_cache.json"
 ADMIN_CACHE_PATH = DATA_DIR / "admin_page_cache.json"
+EXPENSE_CACHE_PATH = DATA_DIR / "expense_sheet_cache.json"
 MYORDER_CACHE_PATH = DATA_DIR / "myorder_shipping_cache.json"
 MYORDER_TOKEN_PATH = DATA_DIR / "myorder_token.txt"
 XLSX_CACHE_PATH = DATA_DIR / "latest_sheet.xlsx"
+META_ADS_CACHE_PATH = DATA_DIR / "meta_ad_spend_cache.json"
+META_ACCOUNTS_CONFIG_PATH = DATA_DIR / "meta_accounts_config.json"
+META_ADS_STUDIO_DB = Path(os.environ.get("META_ADS_STUDIO_DB", r"d:\ยิง AD AuTo\backend\data\ads_studio.db"))
+META_ADS_SYNC_INTERVAL_SEC = 10800  # 3 hours auto-refresh
 
 MYORDER_TEAM_ID = "62e0f2acb2da9100180e480f"
 MYORDER_OM_BASE = "https://mod-om-gateway.myorder.ai"
@@ -53,6 +58,7 @@ GSHEET_ID = "1rqqAl9nAc99TyfMed9zsAfvoQvH5LaClIdGOxoyt6co"
 GSHEET_OCT_GID = "1721963082"
 GSHEET_ADMIN_ID = "1xIo-PlD4j1aPrpK6YRGW50cdWWJpMZGnEO0LCKcjwVY"
 GSHEET_ADMIN_OCT_GID = "1846638698"
+GSHEET_EXPENSE_ID = "1Ju2akALpRhc8Hvxqtucgwdie2ON4AAgFUFPQFECKUJM"
 PORT = int(os.environ.get("STPRINT_ERP_PORT", "3580"))
 BKK = dt.timezone(dt.timedelta(hours=7))
 
@@ -594,12 +600,17 @@ def sync_from_google_sheet(all_months: bool = True) -> dict[str, Any]:
                 if not fb and not job and dep_amt <= 0 and full_amt <= 0:
                     continue
 
-                raw_seq = str(g("seq") or "").strip()
+                raw_seq = re.sub(r"[\s\u200b-\u200d\ufeff]+", "", str(g("seq") or ""))
+                # แถวที่แอดมินลงมัดจำเองแล้วพิมพ์ ** ในช่องส่วนต่าง (แต่มีเลขยอดมัดจำ/ซื้อไฟล์จริง) ต้องนับเป็นแถวหลัก ไม่ใช่แถวย่อย
                 is_sub_row = (
-                    raw_seq == "**"
-                    or str(g("full_amt") or "").strip() == "**"
-                    or str(g("dep_amt") or "").strip() == "**"
-                    or str(g("buy_file") or "").strip() == "**"
+                    dep_amt <= 0
+                    and full_amt <= 0
+                    and (
+                        raw_seq == "**"
+                        or str(g("full_amt") or "").strip() == "**"
+                        or str(g("dep_amt") or "").strip() == "**"
+                        or str(g("buy_file") or "").strip() == "**"
+                    )
                 )
 
                 dep_time = _norm_time(g("dep_time"))
@@ -852,7 +863,7 @@ def sync_admin_page_sheet() -> dict[str, Any]:
     ad_spend: list[dict[str, Any]] = []
     for r_idx in range(74, min(85, len(rows))):
         r = rows[r_idx]
-        p_name = cell(r, 1)
+        p_name = re.sub(r"ู+", "ู", cell(r, 1)).strip()
         if not p_name or p_name == "เพจ":
             continue
         ad_spend.append({
@@ -883,6 +894,260 @@ def get_cached_admin_sheet() -> dict[str, Any]:
         return sync_admin_page_sheet()
     except Exception:
         return {"synced_at": "", "days": {}, "ad_spend": []}
+
+
+_EXPENSE_THAI_MONTHS = [
+    "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+    "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+]
+
+
+def _infer_sheet_tab_from_date(d_str: str) -> str:
+    m = re.match(r"^(\d{4})-(\d{2})", str(d_str or "").strip())
+    if not m:
+        today = dt.date.today()
+        return f"{_EXPENSE_THAI_MONTHS[today.month - 1]}{str(today.year)[-2:]}"
+    yr = int(m.group(1))
+    mon = int(m.group(2))
+    if 1 <= mon <= 12:
+        return f"{_EXPENSE_THAI_MONTHS[mon - 1]}{str(yr)[-2:]}"
+    return ""
+
+
+def _infer_sheet_ym_from_tab(tab_name: str) -> str:
+    s = str(tab_name or "").strip()
+    yr_m = re.search(r"(\d{2})\s*$", s)
+    yr = (2000 + int(yr_m.group(1))) if yr_m else 2026
+    if yr > 2500:
+        yr -= 543
+    for idx, th in enumerate(_EXPENSE_THAI_MONTHS, start=1):
+        if th.rstrip(".") in s:
+            return f"{yr:04d}-{idx:02d}"
+    return ""
+
+
+def _infer_expense_category(title: str, vendor: str) -> str:
+    txt = f"{title} {vendor}".lower()
+    if any(k in txt for k in ("สติ๊กเกอร์", "กระดาษ", "pvc", "ไวนิล")):
+        return "ค่าสติ๊กเกอร์/วัตถุดิบ"
+    if any(k in txt for k in ("ริโก้", "ricoh", "หมึก", "ใบมีด", "อะไหล่", "หัวพิมพ์")):
+        return "ค่าหมึกพิมพ์/อะไหล่"
+    if any(k in txt for k in ("ซอง", "กล่อง", "บับเบิล", "เทป", "ถุงแก้ว", "บรรจุภัณฑ์", "กันกระแทก")):
+        return "ค่าบรรจุภัณฑ์/ซอง/กล่อง"
+    if any(k in txt for k in ("จัดส่ง", "ขนส่ง", "พัสดุ", "lalamove", "มายออเดอร์", "myorder")):
+        return "ค่าขนส่ง/พัสดุ"
+    if any(k in txt for k in ("ยิงแอด", "ค่าแอด", "facebook", "โฆษณา")):
+        return "ค่าโฆษณาเพจ (Ads)"
+    if any(k in txt for k in ("เงินเดือน", "ค่าแรง", "คอมมิช", "เบี้ยขยัน", "ประกันสังคม")):
+        return "เงินเดือน/ค่าแรง/คอมมิชชัน"
+    if any(k in txt for k in ("ค่าน้ำ", "ค่าไฟ", "อินเทอร์เน็ต", "เน็ท", "ais", "การไฟฟ้า", "ประปา")):
+        return "ค่าน้ำ/ค่าไฟ/อินเทอร์เน็ต"
+    return "อื่นๆ"
+
+
+def _clean_sheet_str(v: Any) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    s = str(v).strip()
+    return "" if s in ("None", "-") else s
+
+
+def _normalize_expense_record(raw: dict[str, Any]) -> dict[str, Any]:
+    rec = dict(raw)
+    bill_d = str(rec.get("bill_date") or rec.get("date") or "").strip()
+    acct_d = str(rec.get("date") or bill_d or dt.date.today().isoformat()).strip()
+    if not bill_d:
+        bill_d = acct_d
+    rec["date"] = acct_d
+    rec["bill_date"] = bill_d
+    rec["sheet_tab"] = str(rec.get("sheet_tab") or "").strip() or _infer_sheet_tab_from_date(acct_d)
+    rec["seq"] = _clean_sheet_str(rec.get("seq"))
+    rec["doc_no"] = _clean_sheet_str(rec.get("doc_no"))
+    rec["tax_inv_date"] = str(rec.get("tax_inv_date") or "").strip()
+    rec["tax_inv_no"] = _clean_sheet_str(rec.get("tax_inv_no"))
+    rec["tax_id"] = _clean_sheet_str(rec.get("tax_id"))
+    rec["branch"] = _clean_sheet_str(rec.get("branch"))
+    rec["vendor"] = str(rec.get("vendor") or "").strip()
+    rec["title"] = str(rec.get("title") or "").strip()
+
+    amt = _parse_float(rec.get("amount"))
+    before_vat = _parse_float(rec.get("price_before_vat"))
+    vat_7 = _parse_float(rec.get("vat_7"))
+    wht = _parse_float(rec.get("wht"))
+    if before_vat <= 0 and amt > 0 and vat_7 == 0 and wht == 0:
+        before_vat = amt
+    if amt <= 0 and before_vat > 0:
+        amt = round(before_vat + vat_7 - wht, 4)
+
+    rec["price_before_vat"] = round(before_vat, 4)
+    rec["vat_7"] = round(vat_7, 4)
+    rec["wht"] = round(wht, 4)
+    rec["amount"] = round(amt, 4)
+
+    status = str(rec.get("status") or "paid").strip()
+    rec["status"] = status
+    if status == "paid":
+        rec["paid_amount"] = rec["amount"]
+    elif status == "creditor":
+        rec["paid_amount"] = 0.0
+    else:
+        rec["paid_amount"] = round(_parse_float(rec.get("paid_amount")), 4)
+
+    cat = str(rec.get("category") or "").strip()
+    rec["category"] = cat if cat else _infer_expense_category(rec["title"], rec["vendor"])
+    rec["due_date"] = str(rec.get("due_date") or "").strip()
+    rec["payment_method"] = str(rec.get("payment_method") or "โอนเงิน").strip()
+    rec["note"] = str(rec.get("note") or "").strip()
+    rec["source"] = str(rec.get("source") or "manual").strip()
+    return rec
+
+
+def sync_expense_sheet() -> dict[str, Any]:
+    """Download and parse 13-column monthly expense tabs from Google Sheet."""
+    import openpyxl
+
+    url = f"https://docs.google.com/spreadsheets/d/{GSHEET_EXPENSE_ID}/export?format=xlsx"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=35) as resp:
+        raw_bytes = resp.read()
+
+    wb = openpyxl.load_workbook(io.BytesIO(raw_bytes), data_only=True)
+    expenses: list[dict[str, Any]] = []
+    tabs: list[str] = list(wb.sheetnames)
+    try:
+        for sn in wb.sheetnames:
+            ws = wb[sn]
+            sheet_ym = _infer_sheet_ym_from_tab(sn)
+            all_rows = list(ws.iter_rows(values_only=True))
+            hdr_idx = 1  # Default 0-based index 1 (Row 2)
+            col_map = {
+                "seq": 0,
+                "date": 1,
+                "doc_no": 2,
+                "tax_inv_date": 3,
+                "tax_inv_no": 4,
+                "tax_id": 5,
+                "branch": 6,
+                "vendor": 7,
+                "title": 8,
+                "price_before_vat": 9,
+                "vat_7": 10,
+                "wht": 11,
+                "amount": 12,
+            }
+            for probe_i in range(min(5, len(all_rows))):
+                r_probe = all_rows[probe_i]
+                joined = " ".join(str(c or "") for c in r_probe[:15])
+                if "ลำดับ" in joined and ("รายการ" in joined or "ชื่อร้าน" in joined):
+                    hdr_idx = probe_i
+                    date_seen = 0
+                    for c_i, raw_h in enumerate(r_probe[:20]):
+                        h = re.sub(r"\s+", "", str(raw_h or ""))
+                        if not h:
+                            continue
+                        if h == "ลำดับ":
+                            col_map["seq"] = c_i
+                        elif h == "วันที่":
+                            if date_seen == 0:
+                                col_map["date"] = c_i
+                            date_seen += 1
+                        elif h == "เลขที่":
+                            col_map["doc_no"] = c_i
+                        elif "วันที่ใบกำกับ" in h:
+                            col_map["tax_inv_date"] = c_i
+                        elif "เลขที่ใบกำกับ" in h:
+                            col_map["tax_inv_no"] = c_i
+                        elif "รหัสเสียภาษี" in h or "เลขผู้เสียภาษี" in h:
+                            col_map["tax_id"] = c_i
+                        elif h == "สาขา":
+                            col_map["branch"] = c_i
+                        elif "ชื่อร้าน" in h or "ร้านค้า" in h:
+                            col_map["vendor"] = c_i
+                        elif h == "รายการ":
+                            col_map["title"] = c_i
+                        elif "ก่อนvat" in h.lower() or "ราคาก่อน" in h:
+                            col_map["price_before_vat"] = c_i
+                        elif "vat" in h.lower():
+                            col_map["vat_7"] = c_i
+                        elif "หักณ" in h:
+                            col_map["wht"] = c_i
+                        elif "ราคาสุทธิ" in h or "ยอดสุทธิ" in h:
+                            col_map["amount"] = c_i
+                    break
+
+            for r_idx0 in range(hdr_idx + 1, len(all_rows)):
+                row = all_rows[r_idx0]
+                row_num = r_idx0 + 1
+
+                def gv(k: str) -> Any:
+                    ci = col_map[k]
+                    return row[ci] if ci < len(row) else None
+
+                seq_s = _clean_sheet_str(gv("seq"))
+                if seq_s.lower() in ("total", "รวม", "รวมทั้งสิ้น"):
+                    continue
+                vendor_s = _clean_sheet_str(gv("vendor"))
+                title_s = _clean_sheet_str(gv("title"))
+                before_vat = _parse_float(gv("price_before_vat"))
+                vat_7 = _parse_float(gv("vat_7"))
+                wht = _parse_float(gv("wht"))
+                net_amt = _parse_float(gv("amount"))
+                if not vendor_s and not title_s and before_vat <= 0 and net_amt <= 0:
+                    continue
+
+                bill_date = _norm_date(gv("date")) or (f"{sheet_ym}-01" if sheet_ym else dt.date.today().isoformat())
+                acct_date = bill_date
+                if sheet_ym and not bill_date.startswith(sheet_ym):
+                    acct_date = f"{sheet_ym}-01"
+                tax_inv_date = _norm_date(gv("tax_inv_date")) or ""
+
+                rec = _normalize_expense_record({
+                    "id": f"exp-gs-{sn}-R{row_num}",
+                    "source": "gsheet",
+                    "sheet_tab": sn,
+                    "row": row_num,
+                    "seq": seq_s,
+                    "date": acct_date,
+                    "bill_date": bill_date,
+                    "doc_no": _clean_sheet_str(gv("doc_no")),
+                    "tax_inv_date": tax_inv_date,
+                    "tax_inv_no": _clean_sheet_str(gv("tax_inv_no")),
+                    "tax_id": _clean_sheet_str(gv("tax_id")),
+                    "branch": _clean_sheet_str(gv("branch")),
+                    "vendor": vendor_s,
+                    "title": title_s,
+                    "price_before_vat": before_vat,
+                    "vat_7": vat_7,
+                    "wht": wht,
+                    "amount": net_amt if net_amt > 0 else (before_vat + vat_7 - wht),
+                    "status": "paid",
+                    "payment_method": "โอนเงิน",
+                })
+                expenses.append(rec)
+    finally:
+        wb.close()
+
+    payload = {
+        "synced_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "tabs": tabs,
+        "expenses": expenses,
+    }
+    EXPENSE_CACHE_PATH.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return payload
+
+
+def get_cached_expense_sheet() -> dict[str, Any]:
+    if EXPENSE_CACHE_PATH.exists():
+        try:
+            return json.loads(EXPENSE_CACHE_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    try:
+        return sync_expense_sheet()
+    except Exception:
+        return {"synced_at": "", "tabs": [], "expenses": []}
 
 
 def _map_sales_to_admin(sales_str: str) -> str:
@@ -1499,6 +1764,224 @@ def get_cached_sheet_data() -> dict[str, Any]:
         return {"synced_at": f"ดึงข้อมูลไม่สำเร็จ ({e})", "orders": [], "incomes": []}
 
 
+_META_ADS_LOCK = threading.Lock()
+_THAI_MONTHS_SHORT = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
+
+
+def _empty_meta_ad_spend(err: str = "") -> dict[str, Any]:
+    return {
+        "synced_at": err or "",
+        "synced_ts": 0.0,
+        "year": dt.datetime.now(BKK).year,
+        "months": [],
+        "keys": [],
+        "series": {},
+        "grand_total": 0,
+    }
+
+
+def get_cached_meta_ad_spend() -> dict[str, Any]:
+    if META_ADS_CACHE_PATH.exists():
+        try:
+            data = json.loads(META_ADS_CACHE_PATH.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and "series" in data:
+                return data
+        except Exception:
+            pass
+    return _empty_meta_ad_spend()
+
+
+def sync_meta_ad_spend(year: int | None = None, force: bool = False) -> dict[str, Any]:
+    """Pull daily Meta Marketing API spend across all managed ad accounts and aggregate monthly OHLC + totals per Page."""
+    import sqlite3
+
+    cached = get_cached_meta_ad_spend()
+    now_ts = time.time()
+    if not force and cached.get("series") and (now_ts - float(cached.get("synced_ts") or 0)) < META_ADS_SYNC_INTERVAL_SEC:
+        return cached
+
+    if not _META_ADS_LOCK.acquire(blocking=force):
+        return cached
+    try:
+        tok = os.environ.get("META_ACCESS_TOKEN", "").strip()
+        api_ver = os.environ.get("META_API_VERSION", "").strip() or "v26.0"
+        accounts: list[dict[str, Any]] = []
+        mappings: list[dict[str, Any]] = []
+
+        if META_ADS_STUDIO_DB.exists():
+            conn = sqlite3.connect(str(META_ADS_STUDIO_DB), timeout=10)
+            conn.row_factory = sqlite3.Row
+            try:
+                tok_row = conn.execute("SELECT value FROM app_settings WHERE key='meta_access_token'").fetchone()
+                ver_row = conn.execute("SELECT value FROM app_settings WHERE key='meta_api_version'").fetchone()
+                accounts = [dict(r) for r in conn.execute("SELECT id, name FROM ad_accounts ORDER BY id").fetchall()]
+                mappings = [
+                    dict(r)
+                    for r in conn.execute(
+                        "SELECT channel_name, ad_account_match, campaign_keywords, is_fallback, priority "
+                        "FROM sheet_channel_mappings ORDER BY priority ASC"
+                    ).fetchall()
+                ]
+            finally:
+                conn.close()
+            if not tok and tok_row:
+                tok = str(tok_row["value"] or "").strip()
+            if ver_row and str(ver_row["value"] or "").strip():
+                api_ver = str(ver_row["value"]).strip()
+            # Persist token-free account & channel mapping config for 24/7 Cloud Sync
+            if accounts:
+                try:
+                    cfg_payload = {"api_version": api_ver, "accounts": accounts, "mappings": mappings}
+                    cfg_tmp = META_ACCOUNTS_CONFIG_PATH.with_suffix(".tmp")
+                    cfg_tmp.write_text(json.dumps(cfg_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+                    cfg_tmp.replace(META_ACCOUNTS_CONFIG_PATH)
+                except Exception:
+                    pass
+        elif META_ACCOUNTS_CONFIG_PATH.exists():
+            try:
+                cfg_data = json.loads(META_ACCOUNTS_CONFIG_PATH.read_text(encoding="utf-8"))
+                accounts = list(cfg_data.get("accounts") or [])
+                mappings = list(cfg_data.get("mappings") or [])
+                if cfg_data.get("api_version"):
+                    api_ver = str(cfg_data["api_version"]).strip()
+            except Exception:
+                pass
+
+        if not tok or not accounts:
+            return cached if cached.get("series") else _empty_meta_ad_spend("ยังไม่ได้ตั้งค่า Meta Token / บัญชีโฆษณา")
+
+        def _map_channel(acc_name: str, camp_name: str) -> str:
+            c_low = (camp_name or "").lower()
+            a_low = (acc_name or "").lower()
+            fallback = acc_name
+            for m in mappings:
+                if (m.get("ad_account_match") or "").lower() != a_low:
+                    continue
+                if m.get("is_fallback"):
+                    fallback = m.get("channel_name") or fallback
+                kws = [k.strip().lower() for k in (m.get("campaign_keywords") or "").split(",") if k.strip()]
+                if kws and any(k in c_low for k in kws):
+                    return m.get("channel_name") or fallback
+            return fallback
+
+        now_bkk = dt.datetime.now(BKK)
+        today_str = now_bkk.date().isoformat()
+        target_year = int(year or now_bkk.year)
+        end_date = today_str if target_year == now_bkk.year else f"{target_year}-12-31"
+        mid_date = f"{target_year}-06-30"
+        chunks: list[tuple[str, str]] = []
+        if end_date <= mid_date:
+            chunks.append((f"{target_year}-01-01", end_date))
+        else:
+            chunks.append((f"{target_year}-01-01", mid_date))
+            chunks.append((f"{target_year}-07-01", end_date))
+
+        api_base = f"https://graph.facebook.com/{api_ver}"
+        daily_spend: dict[str, dict[str, float]] = {}
+        daily_total: dict[str, float] = {}
+
+        for acc in accounts:
+            aid = str(acc.get("id") or "").strip()
+            aname = str(acc.get("name") or "").strip()
+            if not aid:
+                continue
+            for s_dt, e_dt in chunks:
+                qs = urllib.parse.urlencode(
+                    {
+                        "access_token": tok,
+                        "level": "campaign",
+                        "time_increment": 1,
+                        "time_range": json.dumps({"since": s_dt, "until": e_dt}),
+                        "fields": "campaign_name,spend,date_start",
+                        "limit": 500,
+                    }
+                )
+                next_url: str | None = f"{api_base}/{aid}/insights?{qs}"
+                while next_url:
+                    req = urllib.request.Request(next_url, headers={"User-Agent": "stprint-erp/1.0"})
+                    with urllib.request.urlopen(req, timeout=45) as resp:
+                        d = json.loads(resp.read().decode("utf-8"))
+                    if "error" in d:
+                        break
+                    for item in d.get("data") or []:
+                        sp = float(item.get("spend") or 0)
+                        d_str = str(item.get("date_start") or "")[:10]
+                        if sp <= 0 or not d_str:
+                            continue
+                        ch = _map_channel(aname, str(item.get("campaign_name") or ""))
+                        ch_map = daily_spend.setdefault(ch, {})
+                        ch_map[d_str] = ch_map.get(d_str, 0.0) + sp
+                        daily_total[d_str] = daily_total.get(d_str, 0.0) + sp
+                    next_url = (d.get("paging") or {}).get("next")
+
+        all_months = sorted({d_str[:7] for d_str in daily_total.keys()})
+        cur_month_key = today_str[:7]
+        month_labels: list[str] = []
+        for mk in all_months:
+            try:
+                m_idx = int(mk.split("-")[1]) - 1
+                lbl = _THAI_MONTHS_SHORT[m_idx]
+            except Exception:
+                lbl = mk
+            if mk == cur_month_key and target_year == now_bkk.year:
+                lbl += "*"
+            month_labels.append(lbl)
+
+        def _build_monthly(day_map: dict[str, float]) -> list[dict[str, Any] | None]:
+            by_m: dict[str, list[tuple[str, float]]] = {}
+            for d_str, sp in sorted(day_map.items()):
+                if sp > 0:
+                    by_m.setdefault(d_str[:7], []).append((d_str, sp))
+            out: list[dict[str, Any] | None] = []
+            for mk in all_months:
+                pts = by_m.get(mk) or []
+                if not pts:
+                    out.append(None)
+                    continue
+                tot_all = sum(v for _, v in pts)
+                is_partial = (mk == cur_month_key and target_year == now_bkk.year)
+                full_pts = [(d_str, v) for d_str, v in pts if not (is_partial and d_str == today_str)]
+                use_pts = full_pts if full_pts else pts
+                vals = [v for _, v in use_pts]
+                out.append(
+                    {
+                        "o": round(vals[0]),
+                        "h": round(max(vals)),
+                        "l": round(min(vals)),
+                        "c": round(vals[-1]),
+                        "t": round(tot_all),
+                        "a": round(sum(vals) / len(vals)),
+                        "d": len(use_pts),
+                        "p": is_partial,
+                    }
+                )
+            return out
+
+        series: dict[str, list[dict[str, Any] | None]] = {"รวมทุกเพจ": _build_monthly(daily_total)}
+        for ch in sorted(daily_spend.keys(), key=lambda c: -sum(daily_spend[c].values())):
+            series[ch] = _build_monthly(daily_spend[ch])
+
+        payload = {
+            "synced_at": now_bkk.strftime("%d/%m/%Y %H:%M"),
+            "synced_ts": now_ts,
+            "year": target_year,
+            "year_th": target_year + 543,
+            "today": today_str,
+            "months": month_labels,
+            "keys": all_months,
+            "series": series,
+            "grand_total": round(sum(daily_total.values())),
+        }
+        tmp_path = META_ADS_CACHE_PATH.with_suffix(".tmp")
+        tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp_path.replace(META_ADS_CACHE_PATH)
+        return payload
+    except Exception as e:
+        return cached if cached.get("series") else _empty_meta_ad_spend(f"ดึงค่าแอด Meta ไม่สำเร็จ ({e})")
+    finally:
+        _META_ADS_LOCK.release()
+
+
 def build_full_state() -> dict[str, Any]:
     with _LOCK:
         store = _load_store()
@@ -1741,8 +2224,45 @@ def build_full_state() -> dict[str, Any]:
     customers = sorted(cust_map.values(), key=lambda x: (x["last_order_date"], x["total_spent"]), reverse=True)
     admin_board = build_admin_board_state(store, orders=orders)
 
+    exp_sheet_data = get_cached_expense_sheet()
+    deleted_exp_ids = set(store.get("deleted_expense_ids") or [])
+    exp_by_id: dict[str, dict[str, Any]] = {}
+    for gs_e in exp_sheet_data.get("expenses") or []:
+        eid = str(gs_e.get("id") or "")
+        if eid and eid not in deleted_exp_ids:
+            exp_by_id[eid] = _normalize_expense_record(gs_e)
+    for st_e in store.get("expenses") or []:
+        eid = str(st_e.get("id") or "")
+        if not eid or eid in deleted_exp_ids:
+            continue
+        # Skip legacy pre-13-column Oct 2026 imports if Oct 2026 Google Sheet rows are already loaded
+        if (
+            str(st_e.get("date") or "").startswith("2026-10")
+            and "price_before_vat" not in st_e
+            and "seq" not in st_e
+            and any(x.get("sheet_tab") == "ต.ค.26" for x in exp_by_id.values())
+        ):
+            continue
+        exp_by_id[eid] = _normalize_expense_record(st_e)
+
+    def _exp_sort_key(x: dict[str, Any]) -> tuple[str, int, str]:
+        sq = str(x.get("seq") or "").strip()
+        sq_num = int(sq) if sq.isdigit() else 999999
+        return (str(x.get("date") or ""), sq_num, str(x.get("bill_date") or ""))
+
+    merged_expenses = sorted(exp_by_id.values(), key=_exp_sort_key)
+    exp_tabs_seen: list[str] = []
+    cur_tab = _infer_sheet_tab_from_date(dt.date.today().isoformat())
+    for t in [cur_tab] + list(reversed(exp_sheet_data.get("tabs") or [])) + [str(x.get("sheet_tab") or "") for x in merged_expenses]:
+        if t and t not in exp_tabs_seen:
+            exp_tabs_seen.append(t)
+
     return {
         "synced_at": sheet_data.get("synced_at") or "",
+        "expense_sheet_info": {
+            "synced_at": exp_sheet_data.get("synced_at") or "",
+            "tabs": exp_tabs_seen,
+        },
         "myorder_info": {
             "synced_at": myorder_data.get("synced_at") or "",
             "total_orders": len(mo_list),
@@ -1755,12 +2275,13 @@ def build_full_state() -> dict[str, Any]:
         },
         "orders": orders,
         "incomes": all_incomes,
-        "expenses": sorted(store.get("expenses") or [], key=lambda x: str(x.get("date") or ""), reverse=True),
+        "expenses": merged_expenses,
         "stock_items": stock_items_computed,
         "stock_movements": sorted(movements, key=lambda x: str(x.get("ts") or ""), reverse=True),
         "customers": customers,
         "material_breakdown": mat_sheets_used,
         "admin_board": admin_board,
+        "meta_ad_spend": get_cached_meta_ad_spend(),
         "users": store.get("users") or DEFAULT_USERS,
     }
 
@@ -1833,9 +2354,35 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 except Exception:
                     pass
                 try:
+                    sync_expense_sheet()
+                except Exception:
+                    pass
+                try:
                     sync_myorder_shipping()
                 except Exception:
                     pass
+                try:
+                    sync_meta_ad_spend(force=False)
+                except Exception:
+                    pass
+                self._send_json({"ok": True, "state": build_full_state()})
+            except Exception as e:
+                self._send_json({"ok": False, "error": str(e)}, status=500)
+            return
+
+        if parsed.path == "/api/meta_ads/sync":
+            try:
+                year_val = body.get("year")
+                sync_meta_ad_spend(year=int(year_val) if year_val else None, force=True)
+                _publish_cloud_state_async()
+                self._send_json({"ok": True, "state": build_full_state()})
+            except Exception as e:
+                self._send_json({"ok": False, "error": str(e)}, status=500)
+            return
+
+        if parsed.path == "/api/expense/sync":
+            try:
+                sync_expense_sheet()
                 self._send_json({"ok": True, "state": build_full_state()})
             except Exception as e:
                 self._send_json({"ok": False, "error": str(e)}, status=500)
@@ -1888,28 +2435,47 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 store = _load_store()
                 exps = store.setdefault("expenses", [])
                 exp_id = str(body.get("id") or "").strip()
-                rec = {
+                bill_date = str(body.get("bill_date") or body.get("date") or dt.date.today().isoformat()).strip()
+                sheet_tab = str(body.get("sheet_tab") or "").strip() or _infer_sheet_tab_from_date(bill_date)
+                acct_date = str(body.get("date") or bill_date).strip()
+                sheet_ym = _infer_sheet_ym_from_tab(sheet_tab)
+                if exp_id.startswith("exp-gs-") and sheet_ym and not bill_date.startswith(sheet_ym):
+                    acct_date = f"{sheet_ym}-01"
+                else:
+                    acct_date = bill_date
+
+                rec = _normalize_expense_record({
                     "id": exp_id or ("exp-" + uuid.uuid4().hex[:8]),
-                    "date": str(body.get("date") or dt.date.today().isoformat()),
-                    "due_date": str(body.get("due_date") or "").strip(),
-                    "category": str(body.get("category") or "ค่าสติ๊กเกอร์/วัตถุดิบ").strip(),
-                    "title": str(body.get("title") or "").strip(),
-                    "vendor": str(body.get("vendor") or "").strip(),
-                    "amount": _parse_float(body.get("amount")),
-                    "paid_amount": _parse_float(body.get("paid_amount")),
-                    "status": str(body.get("status") or "paid").strip(),  # paid | creditor | partial
-                    "payment_method": str(body.get("payment_method") or "โอนเงิน").strip(),
-                    "note": str(body.get("note") or "").strip(),
-                }
-                if rec["status"] == "paid":
-                    rec["paid_amount"] = rec["amount"]
-                elif rec["status"] == "creditor":
-                    rec["paid_amount"] = 0.0
+                    "source": "gsheet" if exp_id.startswith("exp-gs-") else "manual",
+                    "sheet_tab": sheet_tab,
+                    "seq": body.get("seq"),
+                    "date": acct_date,
+                    "bill_date": bill_date,
+                    "doc_no": body.get("doc_no"),
+                    "tax_inv_date": body.get("tax_inv_date"),
+                    "tax_inv_no": body.get("tax_inv_no"),
+                    "tax_id": body.get("tax_id"),
+                    "branch": body.get("branch"),
+                    "vendor": body.get("vendor"),
+                    "title": body.get("title"),
+                    "price_before_vat": body.get("price_before_vat"),
+                    "vat_7": body.get("vat_7"),
+                    "wht": body.get("wht"),
+                    "amount": body.get("amount"),
+                    "due_date": body.get("due_date"),
+                    "category": body.get("category"),
+                    "paid_amount": body.get("paid_amount"),
+                    "status": body.get("status") or "paid",
+                    "payment_method": body.get("payment_method") or "โอนเงิน",
+                    "note": body.get("note"),
+                })
                 idx = next((i for i, x in enumerate(exps) if x.get("id") == rec["id"]), None)
                 if idx is not None:
                     exps[idx] = rec
                 else:
                     exps.append(rec)
+                if exp_id and exp_id in (store.get("deleted_expense_ids") or []):
+                    store["deleted_expense_ids"] = [x for x in store["deleted_expense_ids"] if x != exp_id]
                 _save_store(store)
             self._send_json({"ok": True, "state": build_full_state()})
             return
@@ -1918,10 +2484,19 @@ class DashboardHandler(BaseHTTPRequestHandler):
             exp_id = str(body.get("id") or "")
             with _LOCK:
                 store = _load_store()
+                found = False
                 for x in store.get("expenses", []):
                     if x.get("id") == exp_id:
                         x["status"] = "paid"
                         x["paid_amount"] = float(x.get("amount") or 0.0)
+                        found = True
+                if not found and exp_id.startswith("exp-gs-"):
+                    gs_match = next((g for g in (get_cached_expense_sheet().get("expenses") or []) if g.get("id") == exp_id), None)
+                    if gs_match:
+                        cp = dict(gs_match)
+                        cp["status"] = "paid"
+                        cp["paid_amount"] = float(cp.get("amount") or 0.0)
+                        store.setdefault("expenses", []).append(cp)
                 _save_store(store)
             self._send_json({"ok": True, "state": build_full_state()})
             return
@@ -1931,6 +2506,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
             with _LOCK:
                 store = _load_store()
                 store["expenses"] = [x for x in store.get("expenses", []) if x.get("id") != exp_id]
+                if exp_id.startswith("exp-gs-"):
+                    del_list = store.setdefault("deleted_expense_ids", [])
+                    if exp_id not in del_list:
+                        del_list.append(exp_id)
                 _save_store(store)
             self._send_json({"ok": True, "state": build_full_state()})
             return
@@ -2239,6 +2818,10 @@ def _publish_cloud_state() -> None:
             store_bytes = STORE_PATH.read_bytes()
             _github_put_file("data/erp_store.json", store_bytes, "Sync data/erp_store.json")
             _github_put_file("data/store.json", store_bytes, "Sync data/store.json")
+        if META_ADS_CACHE_PATH.exists():
+            _github_put_file("data/meta_ad_spend_cache.json", META_ADS_CACHE_PATH.read_bytes(), "Sync data/meta_ad_spend_cache.json")
+        if META_ACCOUNTS_CONFIG_PATH.exists():
+            _github_put_file("data/meta_accounts_config.json", META_ACCOUNTS_CONFIG_PATH.read_bytes(), "Sync data/meta_accounts_config.json")
     except Exception:
         pass
     finally:
@@ -2335,7 +2918,15 @@ def _auto_sync_loop() -> None:
     except Exception:
         pass
     try:
+        sync_expense_sheet()
+    except Exception:
+        pass
+    try:
         sync_myorder_shipping()
+    except Exception:
+        pass
+    try:
+        sync_meta_ad_spend(force=False)
     except Exception:
         pass
     try:
@@ -2353,7 +2944,15 @@ def _auto_sync_loop() -> None:
         except Exception:
             pass
         try:
+            sync_expense_sheet()
+        except Exception:
+            pass
+        try:
             sync_myorder_shipping()
+        except Exception:
+            pass
+        try:
+            sync_meta_ad_spend(force=False)
         except Exception:
             pass
         try:
@@ -2373,9 +2972,17 @@ def main() -> None:
         except Exception as e:
             print("admin sheet sync err:", e)
         try:
+            sync_expense_sheet()
+        except Exception as e:
+            print("expense sheet sync err:", e)
+        try:
             sync_myorder_shipping()
         except Exception as e:
             print("myorder sync err:", e)
+        try:
+            sync_meta_ad_spend(force=True)
+        except Exception as e:
+            print("meta ads sync err:", e)
         b64_str = build_compact_cloud_state_b64()
         (BASE_DIR / "cloud_state.b64").write_text(b64_str, encoding="ascii")
         print("Built cloud_state.b64:", len(b64_str), "bytes")
