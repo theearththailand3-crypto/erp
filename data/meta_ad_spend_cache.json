@@ -1,6 +1,6 @@
 {
-  "synced_at": "27/11/2026 14:18",
-  "synced_ts": 1795763921.9033961,
+  "synced_at": "27/11/2026 15:49",
+  "synced_ts": 1795769399.3524964,
   "year": 2026,
   "year_th": 2569,
   "today": "2026-11-27",
@@ -137,7 +137,7 @@
         "h": 3879,
         "l": 2563,
         "c": 2873,
-        "t": 86475,
+        "t": 86696,
         "a": 3271,
         "d": 26,
         "p": true
@@ -249,7 +249,7 @@
         "h": 422,
         "l": 185,
         "c": 335,
-        "t": 8587,
+        "t": 8609,
         "a": 326,
         "d": 26,
         "p": true
@@ -360,8 +360,8 @@
         "o": 1130,
         "h": 1234,
         "l": 776,
-        "c": 994,
-        "t": 25803,
+        "c": 995,
+        "t": 25892,
         "a": 977,
         "d": 26,
         "p": true
@@ -428,7 +428,7 @@
         "h": 1157,
         "l": 418,
         "c": 469,
-        "t": 19980,
+        "t": 19987,
         "a": 755,
         "d": 26,
         "p": true
@@ -513,7 +513,7 @@
         "h": 534,
         "l": 315,
         "c": 493,
-        "t": 11424,
+        "t": 11460,
         "a": 431,
         "d": 26,
         "p": true
@@ -580,7 +580,7 @@
         "h": 743,
         "l": 250,
         "c": 250,
-        "t": 13159,
+        "t": 13197,
         "a": 499,
         "d": 26,
         "p": true
@@ -620,7 +620,7 @@
         "h": 248,
         "l": 118,
         "c": 190,
-        "t": 4575,
+        "t": 4593,
         "a": 173,
         "d": 26,
         "p": true
@@ -642,12 +642,217 @@
         "h": 197,
         "l": 111,
         "c": 140,
-        "t": 2948,
+        "t": 2959,
         "a": 160,
         "d": 18,
         "p": true
       }
     ]
   },
-  "grand_total": 627286
+  "grand_total": 627507,
+  "live_campaigns": [
+    {
+      "id": "120239455647850748",
+      "account": "PLP",
+      "channel": "เพจ PLP",
+      "name": "Real_ PLP",
+      "status": "ACTIVE",
+      "daily_budget": 960.0,
+      "spend_today": 498.73,
+      "msgs_today": 61,
+      "spend_7d": 7006.69,
+      "msgs_7d": 702,
+      "cost_per_msg_7d": 10.0
+    },
+    {
+      "id": "120246726430320764",
+      "account": "Love",
+      "channel": "เพจ ถูกดีจริง",
+      "name": "Realถูกดีจริง",
+      "status": "ACTIVE",
+      "daily_budget": 760.0,
+      "spend_today": 369.59,
+      "msgs_today": 65,
+      "spend_7d": 5358.38,
+      "msgs_7d": 740,
+      "cost_per_msg_7d": 7.2
+    },
+    {
+      "id": "120246263223520734",
+      "account": "jhi",
+      "channel": "เพจ โรงงาน25",
+      "name": "Realโรงงาน",
+      "status": "ACTIVE",
+      "daily_budget": 474.49,
+      "spend_today": 260.01,
+      "msgs_today": 49,
+      "spend_7d": 3415.06,
+      "msgs_7d": 630,
+      "cost_per_msg_7d": 5.4
+    },
+    {
+      "id": "120252913819210209",
+      "account": "sittichai1",
+      "channel": "เพจ ถูกเว้ย25",
+      "name": "Real 25/8/2569 - ถูกเว้ย",
+      "status": "ACTIVE",
+      "daily_budget": 320.0,
+      "spend_today": 214.79,
+      "msgs_today": 36,
+      "spend_7d": 2670.51,
+      "msgs_7d": 481,
+      "cost_per_msg_7d": 5.6
+    },
+    {
+      "id": "120253550250500247",
+      "account": "STPRINT",
+      "channel": "เพจ ST",
+      "name": "STPRINT | Messages | Reel 944054261831560 | ฿200d | 2026-10-26",
+      "status": "ACTIVE",
+      "daily_budget": 240.0,
+      "spend_today": 75.74,
+      "msgs_today": 1,
+      "spend_7d": 1438.95,
+      "msgs_7d": 68,
+      "cost_per_msg_7d": 21.2
+    },
+    {
+      "id": "120252661451280734",
+      "account": "jhi",
+      "channel": "ปริ้นฉลาก",
+      "name": "ปริ้นฉลาก8/10/2026",
+      "status": "ACTIVE",
+      "daily_budget": 170.0,
+      "spend_today": 92.11,
+      "msgs_today": 21,
+      "spend_7d": 1192.15,
+      "msgs_7d": 154,
+      "cost_per_msg_7d": 7.7
+    },
+    {
+      "id": "120219902405220247",
+      "account": "STPRINT",
+      "channel": "เพจ ST",
+      "name": "Reel",
+      "status": "ACTIVE",
+      "daily_budget": 144.0,
+      "spend_today": 57.29,
+      "msgs_today": 3,
+      "spend_7d": 864.72,
+      "msgs_7d": 34,
+      "cost_per_msg_7d": 25.4
+    },
+    {
+      "id": "120253725222150247",
+      "account": "STPRINT",
+      "channel": "พิมพ์สวยการพิมพ์",
+      "name": "PIMSUAY | Messages | 320 THB / 1520 labels | 150 THB/day | 2026-11-04",
+      "status": "PAUSED",
+      "daily_budget": 150.0,
+      "spend_today": 74.65,
+      "msgs_today": 9,
+      "spend_7d": 1063.52,
+      "msgs_7d": 79,
+      "cost_per_msg_7d": 13.5
+    },
+    {
+      "id": "120254299732080209",
+      "account": "sittichai1",
+      "channel": "เพจ ถูกเว้ย25",
+      "name": "Retarget & Upsell คนทักเพจ 180D (11-17)",
+      "status": "PAUSED",
+      "daily_budget": 150.0,
+      "spend_today": 0.0,
+      "msgs_today": 0,
+      "spend_7d": 445.76,
+      "msgs_7d": 9,
+      "cost_per_msg_7d": 49.5
+    }
+  ],
+  "live_pages": [
+    {
+      "channel": "เพจ PLP",
+      "active_campaigns": 1,
+      "paused_campaigns": 0,
+      "active_daily_budget": 960.0,
+      "spend_today": 498.73,
+      "msgs_today": 61,
+      "spend_7d": 7006.69,
+      "msgs_7d": 702,
+      "spend_mtd": 25892.0,
+      "cost_per_msg_7d": 10.0
+    },
+    {
+      "channel": "เพจ ถูกดีจริง",
+      "active_campaigns": 1,
+      "paused_campaigns": 0,
+      "active_daily_budget": 760.0,
+      "spend_today": 369.59,
+      "msgs_today": 65,
+      "spend_7d": 5358.38,
+      "msgs_7d": 740,
+      "spend_mtd": 19987.22,
+      "cost_per_msg_7d": 7.2
+    },
+    {
+      "channel": "เพจ โรงงาน25",
+      "active_campaigns": 1,
+      "paused_campaigns": 0,
+      "active_daily_budget": 474.49,
+      "spend_today": 260.01,
+      "msgs_today": 49,
+      "spend_7d": 3415.06,
+      "msgs_7d": 630,
+      "spend_mtd": 11459.8,
+      "cost_per_msg_7d": 5.4
+    },
+    {
+      "channel": "เพจ ST",
+      "active_campaigns": 2,
+      "paused_campaigns": 0,
+      "active_daily_budget": 384.0,
+      "spend_today": 133.03,
+      "msgs_today": 4,
+      "spend_7d": 2303.67,
+      "msgs_7d": 102,
+      "spend_mtd": 8608.56,
+      "cost_per_msg_7d": 22.6
+    },
+    {
+      "channel": "เพจ ถูกเว้ย25",
+      "active_campaigns": 1,
+      "paused_campaigns": 1,
+      "active_daily_budget": 320.0,
+      "spend_today": 214.79,
+      "msgs_today": 36,
+      "spend_7d": 3116.27,
+      "msgs_7d": 490,
+      "spend_mtd": 13197.43,
+      "cost_per_msg_7d": 6.4
+    },
+    {
+      "channel": "ปริ้นฉลาก",
+      "active_campaigns": 1,
+      "paused_campaigns": 0,
+      "active_daily_budget": 170.0,
+      "spend_today": 92.11,
+      "msgs_today": 21,
+      "spend_7d": 1192.15,
+      "msgs_7d": 154,
+      "spend_mtd": 4592.69,
+      "cost_per_msg_7d": 7.7
+    },
+    {
+      "channel": "พิมพ์สวยการพิมพ์",
+      "active_campaigns": 0,
+      "paused_campaigns": 1,
+      "active_daily_budget": 0.0,
+      "spend_today": 74.65,
+      "msgs_today": 9,
+      "spend_7d": 1063.52,
+      "msgs_7d": 79,
+      "spend_mtd": 2958.51,
+      "cost_per_msg_7d": 13.5
+    }
+  ]
 }
