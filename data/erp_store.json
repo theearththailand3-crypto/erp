@@ -1306,12 +1306,12 @@
       "id": "exp-2b3a66cf",
       "source": "manual",
       "sheet_tab": "ต.ค.26",
-      "seq": "67",
+      "seq": "19",
       "date": "2026-11-20",
       "bill_date": "2026-11-20",
-      "doc_no": "67",
+      "doc_no": "19",
       "tax_inv_date": "2026-11-20",
-      "tax_inv_no": "",
+      "tax_inv_no": "E1709711375",
       "tax_id": "0994000165463",
       "branch": "00010",
       "vendor": "การประปานครหลวง",
@@ -1325,7 +1325,7 @@
       "paid_amount": 422.54,
       "status": "paid",
       "payment_method": "โอนเงิน",
-      "note": ""
+      "note": "เงินสดย่อย"
     },
     {
       "id": "exp-445a8c67",
