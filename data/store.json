@@ -1131,10 +1131,10 @@
       "id": "exp-b75d939c",
       "source": "manual",
       "sheet_tab": "ต.ค.26",
-      "seq": "60",
+      "seq": "12",
       "date": "2026-11-20",
       "bill_date": "2026-11-20",
-      "doc_no": "60",
+      "doc_no": "12",
       "tax_inv_date": "2026-11-20",
       "tax_inv_no": "",
       "tax_id": "0994000165200",
@@ -1150,7 +1150,7 @@
       "paid_amount": 827.9,
       "status": "paid",
       "payment_method": "โอนเงิน",
-      "note": ""
+      "note": "เงินสดย่อย"
     },
     {
       "id": "exp-d3e4a212",
