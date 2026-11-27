@@ -574,6 +574,7 @@
     </div>
     <div class="top-actions">
       <span class="user-badge" id="currentUserBadge">👤 กำลังตรวจสอบสิทธิ์...</span>
+      <button class="btn btn-primary btn-sm" id="btnOpenAdsStudio" style="display:none;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;" onclick="openAdsStudio()">🚀 สตูดิโอยิงแอด</button>
       <button class="btn btn-warning btn-sm" id="btnManageUsers" style="display:none;" onclick="openUserPermsModal()">⚙️ ตั้งค่าสิทธิ์</button>
       <span class="sync-badge" id="syncStatusText">🔄 กำลังโหลดข้อมูล...</span>
       <button class="btn btn-success hide-on-mobile" id="btnMobileQr" onclick="openMobileModal()">📱 เปิดดูในมือถือ (QR Code)</button>
@@ -991,6 +992,40 @@
         <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:11.5px;color:var(--muted);">
           <div id="metaAdLegend" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;"></div>
           <div id="metaAdFootnote">*เดือนปัจจุบันคำนวณแท่งเทียนจากวันที่ปิดวันแล้ว (ยอดรวมนับถึงวันนี้)</div>
+        </div>
+      </div>
+
+      <!-- Live Meta Campaigns & Real ROAS Monitor Card (Read-only 24/7 + Owner Ads Studio Shortcut) -->
+      <div class="card" id="metaLiveRoasCard">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🎯 ศูนย์เช็คสถานะแคมเปญ Meta สด & ROAS จริงเทียบยอดขายรายเพจ</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+              เปรียบเทียบค่าแอดจริงจาก Meta API กับยอดขายจริงจากชีตออเดอร์ • ซิงก์อัตโนมัติ 24 ชม. (ดูได้อย่างเดียวปลอดภัย 100%)
+              <span id="metaLiveRoasSyncTime" style="margin-left:6px;font-weight:600;color:#2563eb;"></span>
+            </div>
+          </div>
+          <div class="toolbar">
+            <button class="btn btn-primary btn-sm" id="btnLiveRoasPages" onclick="setMetaLiveView('pages')">📊 สรุปรายเพจ + ROAS</button>
+            <button class="btn btn-outline btn-sm" id="btnLiveRoasCamps" onclick="setMetaLiveView('campaigns')">🎯 แคมเปญสดทั้งหมด</button>
+            <select id="metaLiveRoasPeriod" onchange="renderMetaLiveRoasCard()" style="font-size:12px;padding:4px 8px;">
+              <option value="7d" selected>📅 ช่วง 7 วันล่าสุด</option>
+              <option value="mtd">🗓️ เดือนนี้ (MTD)</option>
+            </select>
+            <select id="metaLiveCampStatus" onchange="renderMetaLiveRoasCard()" style="display:none;font-size:12px;padding:4px 8px;">
+              <option value="ACTIVE" selected>🟢 เฉพาะที่เปิดอยู่ (ACTIVE)</option>
+              <option value="ALL">📋 แสดงทั้งหมด (รวมพัก)</option>
+            </select>
+            <button class="btn btn-primary btn-sm" id="btnCardAdsStudio" style="display:none;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;" onclick="openAdsStudio()">🚀 เปิดสตูดิโอยิงแอด</button>
+            <button class="btn btn-success btn-sm" onclick="syncMetaAdSpend()">🔄 อัปเดตสด</button>
+          </div>
+        </div>
+        <div id="metaLiveRoasKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-bottom:12px;"></div>
+        <div class="table-wrap">
+          <table>
+            <thead id="metaLiveRoasHead"></thead>
+            <tbody id="metaLiveRoasBody"></tbody>
+          </table>
         </div>
       </div>
 
@@ -2279,6 +2314,10 @@
       const modeLabel = CURRENT_USER.can_edit === false ? ' (ดูอย่างเดียว)' : '';
       document.getElementById('currentUserBadge').textContent = `👤 ${CURRENT_USER.display_name || CURRENT_USER.username}${modeLabel}`;
       document.getElementById('btnManageUsers').style.display = CURRENT_USER.can_manage_users ? 'inline-flex' : 'none';
+      const btnAdsTop = document.getElementById('btnOpenAdsStudio');
+      if (btnAdsTop) btnAdsTop.style.display = CURRENT_USER.can_manage_users ? 'inline-flex' : 'none';
+      const btnAdsCard = document.getElementById('btnCardAdsStudio');
+      if (btnAdsCard) btnAdsCard.style.display = CURRENT_USER.can_manage_users ? 'inline-flex' : 'none';
 
       if (CURRENT_USER.can_edit === false) {
         document.body.classList.add('view-only-mode');
@@ -4990,6 +5029,7 @@
       if (!card) return;
       if (CURRENT_USER && CURRENT_USER.hide_money) {
         card.style.display = 'none';
+        renderMetaLiveRoasCard();
         return;
       }
       card.style.display = '';
@@ -5005,6 +5045,7 @@
         if (tabsEl) tabsEl.innerHTML = '';
         if (kpiEl) kpiEl.innerHTML = `<div style="grid-column:1/-1;padding:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;color:#92400e;font-size:13px;">ยังไม่มีข้อมูลค่าแอด Meta รายเดือน — กดปุ่ม <strong>🔄 ซิงก์ค่าแอด Meta สด</strong> ด้านบนขวาเพื่อดึงข้อมูลจาก Meta API</div>`;
         if (legEl) legEl.innerHTML = '';
+        renderMetaLiveRoasCard();
         return;
       }
 
@@ -5076,6 +5117,283 @@
 
       _bindMetaAdCanvasEvents();
       requestAnimationFrame(() => drawMetaAdSpendCanvas());
+      renderMetaLiveRoasCard();
+    }
+
+    let _metaLiveView = 'pages';
+
+    function openAdsStudio() {
+      if (!CURRENT_USER || !CURRENT_USER.can_manage_users) {
+        alert('เฉพาะเจ้าของร้าน (admin) เท่านั้นที่เปิดสตูดิโอยิงแอดได้ครับ');
+        return;
+      }
+      const host = location.hostname || '';
+      if (host === 'localhost' || host === '127.0.0.1') {
+        window.open('http://127.0.0.1:8000/', '_blank', 'noopener');
+      } else if (/^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)) {
+        window.open(`http://${host}:8000/`, '_blank', 'noopener');
+      } else {
+        alert('🚀 Meta Auto Ads Studio (ปุ่มยิงแอด/ปรับงบจริง) ทำงานเฉพาะบนคอมร้าน (http://127.0.0.1:8000) เพื่อความปลอดภัยของ Token ครับ\n\n📱 หากดูจากมือถือ สามารถเช็คสถานะแคมเปญและ ROAS สดได้ในตารางด้านล่างนี้ตลอด 24 ชม. และกดอนุมัติ/ปรับงบแอดผ่าน Telegram Bot ได้ทันทีครับ');
+      }
+    }
+
+    function setMetaLiveView(v) {
+      _metaLiveView = v;
+      const bP = document.getElementById('btnLiveRoasPages');
+      const bC = document.getElementById('btnLiveRoasCamps');
+      const pSel = document.getElementById('metaLiveRoasPeriod');
+      const sSel = document.getElementById('metaLiveCampStatus');
+      if (bP) bP.className = v === 'pages' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+      if (bC) bC.className = v === 'campaigns' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+      if (pSel) pSel.style.display = v === 'pages' ? '' : 'none';
+      if (sSel) sSel.style.display = v === 'campaigns' ? '' : 'none';
+      renderMetaLiveRoasCard();
+    }
+
+    function _mapMetaChannelToAdminPage(ch) {
+      const m = {
+        'เพจ ST': 'STprint',
+        'เพจ PLP': 'PLP',
+        'เพจ โรงงาน25': 'โรงงานสติ๊กเกอร์25',
+        'เพจ ถูกดีจริง': 'ถูกดีจริง',
+        'เพจ ถูกเว้ย25': 'ถูกเว้ย25',
+        'พิมพ์สวยการพิมพ์': 'พิมพ์สวย',
+        'ปริ้นฉลาก': 'ปริ้นฉลาก',
+        'ฉลาก25': 'ฉลาก25'
+      };
+      return m[ch] || ch;
+    }
+
+    function _computeSalesByAdminPage(periodMode) {
+      const board = STATE.admin_board || { daily: [] };
+      const todayIso = _getBkkTodayIso();
+      const curYm = todayIso.slice(0, 7);
+      const todayMs = Date.parse(todayIso + 'T00:00:00Z');
+      const out = {};
+      for (const d of (board.daily || [])) {
+        const ds = String(d.date || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(ds)) continue;
+        let ok = false;
+        if (periodMode === 'mtd') {
+          ok = ds.startsWith(curYm);
+        } else {
+          const diff = Math.floor((todayMs - Date.parse(ds + 'T00:00:00Z')) / 86400000);
+          ok = (diff >= 1 && diff <= 7);
+        }
+        if (!ok) continue;
+        const bp = d.by_page || {};
+        for (const [pg, rec] of Object.entries(bp)) {
+          out[pg] = (out[pg] || 0) + Number((rec && rec.total_amt) || 0);
+        }
+      }
+      return out;
+    }
+
+    function _renderRoasBadge(roas, spend) {
+      if (!spend || spend <= 0) return '<span class="badge b-gray">ไม่มีจ่าย</span>';
+      if (roas >= 10) return `<span class="badge b-green">🔥 ${roas.toFixed(1)}x (สเกลได้)</span>`;
+      if (roas >= 6) return `<span class="badge b-blue">✅ ${roas.toFixed(1)}x (คุ้มดี)</span>`;
+      if (roas >= 3) return `<span class="badge b-amber">⚠️ ${roas.toFixed(1)}x (เฝ้าระวัง)</span>`;
+      return `<span class="badge b-red">🛑 ${roas.toFixed(1)}x (ควรปรับ/พัก)</span>`;
+    }
+
+    function renderMetaLiveRoasCard() {
+      const card = document.getElementById('metaLiveRoasCard');
+      if (!card) return;
+      if (CURRENT_USER && CURRENT_USER.hide_money) {
+        card.style.display = 'none';
+        return;
+      }
+      card.style.display = '';
+      const btnAdsCard = document.getElementById('btnCardAdsStudio');
+      if (btnAdsCard) btnAdsCard.style.display = (CURRENT_USER && CURRENT_USER.can_manage_users) ? 'inline-flex' : 'none';
+
+      const md = STATE.meta_ad_spend || {};
+      const syncEl = document.getElementById('metaLiveRoasSyncTime');
+      if (syncEl) syncEl.textContent = md.synced_at ? `(อัปเดต ${md.synced_at})` : '';
+
+      const livePages = Array.isArray(md.live_pages) ? md.live_pages : [];
+      const liveCamps = Array.isArray(md.live_campaigns) ? md.live_campaigns : [];
+      const kpiBox = document.getElementById('metaLiveRoasKpis');
+      const thead = document.getElementById('metaLiveRoasHead');
+      const tbody = document.getElementById('metaLiveRoasBody');
+      if (!kpiBox || !thead || !tbody) return;
+
+      if (!livePages.length && !liveCamps.length) {
+        kpiBox.innerHTML = `<div style="grid-column:1/-1;padding:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;color:#92400e;font-size:13px;">ยังไม่มีข้อมูลแคมเปญสด — กดปุ่ม <strong>🔄 อัปเดตสด</strong> ด้านบนขวาเพื่อดึงสถานะแคมเปญและ ROAS จาก Meta API ทันทีครับ</div>`;
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+        return;
+      }
+
+      const periodMode = (document.getElementById('metaLiveRoasPeriod') || {}).value || '7d';
+      const salesByPg = _computeSalesByAdminPage(periodMode);
+
+      const totActiveBudget = livePages.reduce((s, x) => s + Number(x.active_daily_budget || 0), 0);
+      const totActiveCamps = livePages.reduce((s, x) => s + Number(x.active_campaigns || 0), 0);
+      const totSpendToday = livePages.reduce((s, x) => s + Number(x.spend_today || 0), 0);
+      const totSpend7d = livePages.reduce((s, x) => s + Number(x.spend_7d || 0), 0);
+      const totSpendMtd = livePages.reduce((s, x) => s + Number(x.spend_mtd || 0), 0);
+      const totMsgs7d = livePages.reduce((s, x) => s + Number(x.msgs_7d || 0), 0);
+      const totMsgsToday = livePages.reduce((s, x) => s + Number(x.msgs_today || 0), 0);
+      const cpm7d = totMsgs7d > 0 ? (totSpend7d / totMsgs7d) : 0;
+
+      const periodSpendTot = periodMode === 'mtd' ? totSpendMtd : totSpend7d;
+      const periodSalesTot = livePages.reduce((s, x) => s + Number(salesByPg[_mapMetaChannelToAdminPage(x.channel)] || 0), 0);
+      const overallRoas = periodSpendTot > 0 ? (periodSalesTot / periodSpendTot) : 0;
+      const periodLbl = periodMode === 'mtd' ? 'เดือนนี้ (MTD)' : '7 วันล่าสุด';
+
+      kpiBox.innerHTML = `
+        <div class="kpi-card blue" style="margin:0;padding:11px 14px;">
+          <div class="kpi-label">⚡ งบแคมเปญที่เปิดอยู่/วัน</div>
+          <div class="kpi-value" style="font-size:20px;">฿${fmtMoney(totActiveBudget)}/วัน</div>
+          <div class="kpi-sub">กำลังวิ่ง ${fmtInt(totActiveCamps)} แคมเปญ</div>
+        </div>
+        <div class="kpi-card amber" style="margin:0;padding:11px 14px;">
+          <div class="kpi-label">💸 จ่ายแอดวันนี้ / 7 วัน</div>
+          <div class="kpi-value" style="font-size:20px;">฿${fmtMoney(totSpendToday)}</div>
+          <div class="kpi-sub">7 วันล่าสุด ฿${fmtInt(totSpend7d)} • เดือนนี้ ฿${fmtInt(totSpendMtd)}</div>
+        </div>
+        <div class="kpi-card purple" style="margin:0;padding:11px 14px;">
+          <div class="kpi-label">💬 ทักแชท 7 วัน (ต้นทุน/ทัก)</div>
+          <div class="kpi-value" style="font-size:20px;">${fmtInt(totMsgs7d)} ทัก</div>
+          <div class="kpi-sub">เฉลี่ย ฿${cpm7d.toFixed(1)}/ทัก • วันนี้ ${fmtInt(totMsgsToday)} ทัก</div>
+        </div>
+        <div class="kpi-card green" style="margin:0;padding:11px 14px;">
+          <div class="kpi-label">🔥 ROAS จริงรวม (${periodLbl})</div>
+          <div class="kpi-value" style="font-size:20px;color:${overallRoas >= 6 ? '#15803d' : (overallRoas >= 3 ? '#b45309' : '#dc2626')};">${overallRoas.toFixed(2)}x</div>
+          <div class="kpi-sub">ยอดขายชีต ฿${fmtInt(periodSalesTot)} ÷ ค่าแอด ฿${fmtInt(periodSpendTot)}</div>
+        </div>
+      `;
+
+      if (_metaLiveView === 'pages') {
+        const rows = livePages.map(p => {
+          const admPg = _mapMetaChannelToAdminPage(p.channel);
+          const sp = periodMode === 'mtd' ? Number(p.spend_mtd || 0) : Number(p.spend_7d || 0);
+          const sales = Number(salesByPg[admPg] || 0);
+          const roas = sp > 0 ? (sales / sp) : 0;
+          return { ...p, admPg, sp, sales, roas };
+        });
+
+        if (isMobileView()) {
+          thead.innerHTML = `
+            <tr>
+              <th style="width:48%;">เพจ • สถานะ • งบ/วัน</th>
+              <th class="text-right" style="width:52%;">แอด vs ยอดขาย • ROAS (${periodLbl})</th>
+            </tr>
+          `;
+          tbody.innerHTML = rows.map(r => `
+            <tr>
+              <td>
+                <div style="font-weight:700;color:#0f172a;">${esc(r.channel)}</div>
+                <div style="margin-top:3px;">
+                  ${r.active_campaigns > 0
+                    ? `<span class="badge b-green">🟢 เปิด ${r.active_campaigns}</span>`
+                    : `<span class="badge b-gray">⏸️ พักทั้งหมด</span>`}
+                  <span style="font-size:11px;font-weight:700;color:var(--primary);margin-left:4px;">฿${fmtInt(r.active_daily_budget)}/วัน</span>
+                </div>
+                <div style="font-size:10.5px;color:var(--muted);margin-top:3px;">วันนี้จ่าย ฿${fmtInt(r.spend_today)} • 7วัน ${fmtInt(r.msgs_7d)} ทัก (${r.cost_per_msg_7d > 0 ? '฿' + r.cost_per_msg_7d.toFixed(0) + '/ทัก' : '-'})</div>
+              </td>
+              <td class="text-right">
+                <div style="font-size:11px;color:var(--muted);">แอด ฿${fmtInt(r.sp)} → ขาย <strong style="color:#0f172a;">฿${fmtInt(r.sales)}</strong></div>
+                <div style="margin-top:4px;">${_renderRoasBadge(r.roas, r.sp)}</div>
+              </td>
+            </tr>
+          `).join('');
+        } else {
+          thead.innerHTML = `
+            <tr>
+              <th>เพจ (Channel)</th>
+              <th class="text-center">สถานะแคมเปญ</th>
+              <th class="text-right">งบเปิดอยู่/วัน</th>
+              <th class="text-right">จ่ายวันนี้</th>
+              <th class="text-right">ทัก 7 วัน (฿/ทัก)</th>
+              <th class="text-right">ค่าแอด (${periodLbl})</th>
+              <th class="text-right">ยอดขายจริง (${periodLbl})</th>
+              <th class="text-center">ROAS จริง</th>
+            </tr>
+          `;
+          tbody.innerHTML = rows.map(r => `
+            <tr>
+              <td><strong>${esc(r.channel)}</strong></td>
+              <td class="text-center">
+                ${r.active_campaigns > 0
+                  ? `<span class="badge b-green">🟢 เปิด ${r.active_campaigns}</span>`
+                  : `<span class="badge b-gray">⏸️ พักอยู่</span>`}
+                ${r.paused_campaigns > 0 ? `<span style="font-size:11px;color:var(--muted);margin-left:4px;">(พัก ${r.paused_campaigns})</span>` : ''}
+              </td>
+              <td class="text-right" style="font-weight:700;color:var(--primary);">฿${fmtMoney(r.active_daily_budget)}</td>
+              <td class="text-right">฿${fmtMoney(r.spend_today)}</td>
+              <td class="text-right">
+                <strong>${fmtInt(r.msgs_7d)}</strong> ทัก
+                <div style="font-size:11px;color:var(--muted);">${r.cost_per_msg_7d > 0 ? `฿${r.cost_per_msg_7d.toFixed(1)}/ทัก` : '-'}</div>
+              </td>
+              <td class="text-right" style="color:#b45309;font-weight:600;">฿${fmtInt(r.sp)}</td>
+              <td class="text-right" style="color:#15803d;font-weight:700;">฿${fmtInt(r.sales)}</td>
+              <td class="text-center">${_renderRoasBadge(r.roas, r.sp)}</td>
+            </tr>
+          `).join('');
+        }
+      } else {
+        const stFilter = (document.getElementById('metaLiveCampStatus') || {}).value || 'ACTIVE';
+        const filteredC = liveCamps.filter(c => stFilter === 'ALL' || c.status === 'ACTIVE');
+        if (isMobileView()) {
+          thead.innerHTML = `
+            <tr>
+              <th style="width:58%;">แคมเปญ • เพจ • สถานะ</th>
+              <th class="text-right" style="width:42%;">งบ/วัน • 7 วัน • ทัก</th>
+            </tr>
+          `;
+          tbody.innerHTML = filteredC.map(c => {
+            const stBadge = c.status === 'ACTIVE'
+              ? '<span class="badge b-green">🟢 ACTIVE</span>'
+              : (c.status === 'WITH_ISSUES' ? '<span class="badge b-red">⚠️ ISSUE</span>' : `<span class="badge b-gray">⏸️ ${esc(c.status)}</span>`);
+            return `
+              <tr>
+                <td>
+                  <div style="font-weight:700;font-size:12px;color:#0f172a;">${esc(c.name)}</div>
+                  <div style="font-size:10.5px;color:var(--muted);margin-top:2px;">${esc(c.channel)} • ${stBadge}</div>
+                </td>
+                <td class="text-right">
+                  <div style="font-weight:700;color:var(--primary);">฿${fmtInt(c.daily_budget)}/วัน</div>
+                  <div style="font-size:10.5px;color:var(--muted);">วันนี้ ฿${fmtInt(c.spend_today)} • 7วัน ฿${fmtInt(c.spend_7d)}</div>
+                  <div style="font-size:10.5px;font-weight:600;color:#0f172a;">💬 ${fmtInt(c.msgs_7d)} ทัก (${c.cost_per_msg_7d > 0 ? '฿' + c.cost_per_msg_7d.toFixed(0) : '-'})</div>
+                </td>
+              </tr>
+            `;
+          }).join('') || `<tr><td colspan="2" class="text-center" style="padding:18px;color:var(--muted);">ไม่พบแคมเปญในสถานะนี้</td></tr>`;
+        } else {
+          thead.innerHTML = `
+            <tr>
+              <th>เพจ</th>
+              <th>ชื่อแคมเปญ (Meta)</th>
+              <th class="text-center">สถานะ</th>
+              <th class="text-right">งบ/วัน</th>
+              <th class="text-right">จ่ายวันนี้</th>
+              <th class="text-right">จ่าย 7 วัน</th>
+              <th class="text-right">ทัก 7 วัน</th>
+              <th class="text-right">ต้นทุน/ทัก</th>
+            </tr>
+          `;
+          tbody.innerHTML = filteredC.map(c => {
+            const stBadge = c.status === 'ACTIVE'
+              ? '<span class="badge b-green">🟢 ACTIVE</span>'
+              : (c.status === 'WITH_ISSUES' ? '<span class="badge b-red">⚠️ WITH_ISSUES</span>' : `<span class="badge b-gray">⏸️ ${esc(c.status)}</span>`);
+            return `
+              <tr>
+                <td><strong>${esc(c.channel)}</strong><div style="font-size:10.5px;color:var(--muted);">${esc(c.account)}</div></td>
+                <td style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(c.name)}">${esc(c.name)}</td>
+                <td class="text-center">${stBadge}</td>
+                <td class="text-right" style="font-weight:700;color:var(--primary);">฿${fmtMoney(c.daily_budget)}</td>
+                <td class="text-right">฿${fmtMoney(c.spend_today)}</td>
+                <td class="text-right" style="font-weight:600;">฿${fmtMoney(c.spend_7d)}</td>
+                <td class="text-right"><strong>${fmtInt(c.msgs_7d)}</strong> ทัก</td>
+                <td class="text-right" style="font-weight:700;color:${c.cost_per_msg_7d > 0 && c.cost_per_msg_7d <= 25 ? '#15803d' : (c.cost_per_msg_7d > 40 ? '#dc2626' : '#0f172a')};">${c.cost_per_msg_7d > 0 ? '฿' + c.cost_per_msg_7d.toFixed(1) : '-'}</td>
+              </tr>
+            `;
+          }).join('') || `<tr><td colspan="8" class="text-center" style="padding:20px;color:var(--muted);">ไม่พบแคมเปญในสถานะนี้</td></tr>`;
+        }
+      }
     }
 
     function renderAdminBoardTab() {
