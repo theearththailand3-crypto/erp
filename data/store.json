@@ -1501,6 +1501,31 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-098e7e81",
+      "source": "manual",
+      "sheet_tab": "พ.ย.26",
+      "seq": "25",
+      "date": "2026-11-17",
+      "bill_date": "2026-11-17",
+      "doc_no": "25",
+      "tax_inv_date": "2026-11-17",
+      "tax_inv_no": "SMPIE26110253181",
+      "tax_id": "0105555021215",
+      "branch": "00133",
+      "vendor": "บริษัท ซีอาร์ซี ไทวัสดุ จำกัด",
+      "title": "ค่าโคมไฟพาแนลไลท์ติดลอย LED",
+      "price_before_vat": 3038.73,
+      "vat_7": 212.71,
+      "wht": 0.0,
+      "amount": 3251.44,
+      "due_date": "",
+      "category": "อื่นๆ",
+      "paid_amount": 3251.44,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสด (กรรมการ)"
     }
   ],
   "stock_items": [
