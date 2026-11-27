@@ -4810,7 +4810,7 @@
                 ${tot > 0 ? `<div style="position:absolute;top:${wickTopPx}px;width:2px;height:${wickHeight}px;background:${color};border-radius:2px;"></div>` : ''}
                 <div style="position:absolute;top:${tot > 0 ? bodyTopPx : (chartH - 3)}px;width:${mobile ? '12px' : '16px'};height:${bodyHeight}px;background:${color};border-radius:3px;box-shadow:0 2px 4px rgba(0,0,0,0.12);border:1px solid ${color};"></div>
               </div>
-              <div style="margin-top:4px;font-size:${mobile ? '10.5px' : '11.5px'};font-weight:700;color:#334155;">${dayNum}/10</div>
+              <div style="margin-top:4px;font-size:${mobile ? '10.5px' : '11.5px'};font-weight:700;color:#334155;">${dayNum}/${d.date.slice(5, 7)}</div>
               <div style="font-size:${mobile ? '9.5px' : '10px'};color:#64748b;">${d.print_cust + d.dep_cust}คน</div>
             </div>
           `;
@@ -4846,7 +4846,7 @@
                 ${aH > 0 ? `<div style="height:${aH}px;background:#8b5cf6;" title="เอม"></div>` : ''}
                 ${jH > 0 ? `<div style="height:${jH}px;background:#2563eb;" title="จูน"></div>` : ''}
               </div>
-              <div style="margin-top:4px;font-size:${mobile ? '10.5px' : '11.5px'};font-weight:700;color:#334155;">${dayNum}/10</div>
+              <div style="margin-top:4px;font-size:${mobile ? '10.5px' : '11.5px'};font-weight:700;color:#334155;">${dayNum}/${d.date.slice(5, 7)}</div>
             </div>
           `;
         };
@@ -4900,7 +4900,11 @@
 
       // Render 8 Pages + Ad Spend Table
       const adMap = {};
-      (board.ad_spend || []).forEach(a => { adMap[a.page] = a; });
+      (board.ad_spend || []).forEach(a => {
+        const cleanPg = String(a.page || '').replace(/ู+/g, 'ู').trim();
+        adMap[cleanPg] = a;
+        if (a.page) adMap[a.page] = a;
+      });
       const pageSummaryTbody = document.getElementById('adminPageSummaryBody');
       const pageSummaryThead = pageSummaryTbody.previousElementSibling;
       if (mobile) {
