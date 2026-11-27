@@ -1476,6 +1476,31 @@
       "status": "paid",
       "payment_method": "โอนเงิน",
       "note": "เงินสดย่อย"
+    },
+    {
+      "id": "exp-c1b35219",
+      "source": "manual",
+      "sheet_tab": "พ.ย.26",
+      "seq": "17",
+      "date": "2026-11-19",
+      "bill_date": "2026-11-19",
+      "doc_no": "17",
+      "tax_inv_date": "2026-11-19",
+      "tax_inv_no": "",
+      "tax_id": "",
+      "branch": "",
+      "vendor": "บริษัท ไปรษณีย์ไทย จำกัด",
+      "title": "ค่าจัดส่งเอกสาร (บิลใบเสร็จ)",
+      "price_before_vat": 54.0,
+      "vat_7": 0.0,
+      "wht": 0.0,
+      "amount": 54.0,
+      "due_date": "",
+      "category": "ค่าขนส่ง/พัสดุ",
+      "paid_amount": 54.0,
+      "status": "paid",
+      "payment_method": "โอนเงิน",
+      "note": "เงินสดย่อย"
     }
   ],
   "stock_items": [
