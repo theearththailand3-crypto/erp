@@ -1006,12 +1006,12 @@
       "id": "exp-23c44c28",
       "source": "manual",
       "sheet_tab": "ก.ย.26",
-      "seq": "71",
+      "seq": "22",
       "date": "2026-11-24",
       "bill_date": "2026-11-24",
-      "doc_no": "71",
+      "doc_no": "22",
       "tax_inv_date": "2026-11-24",
-      "tax_inv_no": "",
+      "tax_inv_no": "RC2-26-11-0010830",
       "tax_id": "0105521009891",
       "branch": "สำนักงานใหญ่",
       "vendor": "บริษัท ฟูจิฟิล์ม บิสซิเนส อินโนเวชั่น จำกัด",
@@ -1025,7 +1025,7 @@
       "paid_amount": 62233.01,
       "status": "paid",
       "payment_method": "โอนเงิน",
-      "note": ""
+      "note": "เงินสดย่อย"
     },
     {
       "id": "exp-65bfbf4c",
