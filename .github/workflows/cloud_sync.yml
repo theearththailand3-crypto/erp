@@ -23,12 +23,14 @@ jobs:
       - name: Install openpyxl
         run: pip install openpyxl
 
-      - name: Sync Google Sheets and build cloud_state.b64
+      - name: Sync Google Sheets + Meta Ads and build cloud_state.b64
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
         run: python server.py --cloud-build
 
       - name: Commit and push updated cloud_state.b64
         run: |
           git config user.name "ST Print Cloud Bot"
           git config user.email "bot@stprint.org"
-          git add cloud_state.b64
+          git add cloud_state.b64 data/meta_ad_spend_cache.json
           git diff --staged --quiet || (git commit -m "Auto-sync cloud_state.b64 [skip ci]" && git push)
