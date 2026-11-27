@@ -376,6 +376,7 @@ def _load_store() -> dict[str, Any]:
         "stock_items": DEFAULT_STOCK_ITEMS,
         "stock_movements": [],
         "order_overrides": {},
+        "reorder_contacted": {},
         "users": DEFAULT_USERS,
         "last_sync_ts": 0.0,
     }
@@ -2198,6 +2199,11 @@ def build_full_state() -> dict[str, Any]:
         ckey = o.get("customer_key") or "unknown"
         if ckey == "unknown" and not o.get("fb"):
             continue
+        o_ch_raw = re.sub(r"ู+", "ู", str(o.get("channel") or "").strip())
+        o_ch = re.sub(r"^LINE\s+", "Line ", o_ch_raw) if o_ch_raw else ""
+        o_date = str(o.get("date") or "")
+        o_job = str(o.get("job") or "").strip()
+        o_size = str(o.get("size") or "").strip()
         c = cust_map.get(ckey)
         if c is None:
             c = {
@@ -2206,7 +2212,7 @@ def build_full_state() -> dict[str, Any]:
                 "recipient": o.get("recipient") or "",
                 "phone": o.get("phone") or "",
                 "address": o.get("address") or "",
-                "channel": o.get("channel") or "",
+                "channel": o_ch,
                 "sales": o.get("sales") or "",
                 "order_count": 0,
                 "design_count": 0,
@@ -2215,6 +2221,8 @@ def build_full_state() -> dict[str, Any]:
                 "total_spent": 0.0,
                 "total_sheets": 0.0,
                 "last_order_date": "",
+                "last_job": o_job,
+                "last_size": o_size,
                 "orders": [],
             }
             cust_map[ckey] = c
@@ -2226,8 +2234,8 @@ def build_full_state() -> dict[str, Any]:
             c["phone"] = o["phone"]
         if o.get("address") and not c["address"]:
             c["address"] = o["address"]
-        if o.get("channel") and not c["channel"]:
-            c["channel"] = o["channel"]
+        if o_ch and not c["channel"]:
+            c["channel"] = o_ch
         if not o.get("is_sub_row"):
             c["order_count"] += 1
         c["design_count"] += 1
@@ -2235,8 +2243,21 @@ def build_full_state() -> dict[str, Any]:
         c["total_full"] += float(o.get("full_amt") or 0.0)
         c["total_spent"] += float(o.get("total_amt") or 0.0)
         c["total_sheets"] += float(o.get("total_sheets") or 0.0)
-        if str(o.get("date") or "") > c["last_order_date"]:
-            c["last_order_date"] = str(o.get("date") or "")
+        if o_date > c["last_order_date"]:
+            c["last_order_date"] = o_date
+            if o_ch:
+                c["channel"] = o_ch
+            if o_job:
+                c["last_job"] = o_job
+            if o_size:
+                c["last_size"] = o_size
+        elif o_date == c["last_order_date"]:
+            if o_job and not c["last_job"]:
+                c["last_job"] = o_job
+            if o_size and not c["last_size"]:
+                c["last_size"] = o_size
+        elif o_job and not c["last_job"]:
+            c["last_job"] = o_job
         c["orders"].append(o)
 
     customers = sorted(cust_map.values(), key=lambda x: (x["last_order_date"], x["total_spent"]), reverse=True)
@@ -2297,6 +2318,7 @@ def build_full_state() -> dict[str, Any]:
         "stock_items": stock_items_computed,
         "stock_movements": sorted(movements, key=lambda x: str(x.get("ts") or ""), reverse=True),
         "customers": customers,
+        "reorder_contacted": store.get("reorder_contacted") or {},
         "material_breakdown": mat_sheets_used,
         "admin_board": admin_board,
         "meta_ad_spend": get_cached_meta_ad_spend(),
@@ -2625,6 +2647,28 @@ class DashboardHandler(BaseHTTPRequestHandler):
                         ov["prep_status_label"] = str(body["prep_status_label"]).strip()
                     if "admin_note" in body:
                         ov["admin_note"] = str(body["admin_note"]).strip()
+                    _save_store(store)
+            self._send_json({"ok": True, "state": build_full_state()})
+            return
+
+        if parsed.path == "/api/customer/reorder_mark":
+            ckey = str(body.get("customer_key") or "").strip()
+            contacted = bool(body.get("contacted", True))
+            by_user = str(body.get("by") or "").strip()
+            note = str(body.get("note") or "").strip()
+            if ckey:
+                with _LOCK:
+                    store = _load_store()
+                    rmap = store.setdefault("reorder_contacted", {})
+                    if contacted:
+                        rmap[ckey] = {
+                            "date": dt.datetime.now(BKK).date().isoformat(),
+                            "ts": dt.datetime.now(BKK).strftime("%Y-%m-%d %H:%M"),
+                            "by": by_user,
+                            "note": note,
+                        }
+                    else:
+                        rmap.pop(ckey, None)
                     _save_store(store)
             self._send_json({"ok": True, "state": build_full_state()})
             return
