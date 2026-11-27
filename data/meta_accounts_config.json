@@ -1,0 +1,76 @@
+{
+  "api_version": "v26.0",
+  "accounts": [
+    {
+      "id": "act_1126425985530605",
+      "name": "Love"
+    },
+    {
+      "id": "act_1417395022571508",
+      "name": "jhi"
+    },
+    {
+      "id": "act_2502767453147720",
+      "name": "PLP"
+    },
+    {
+      "id": "act_323395188211151",
+      "name": "STPRINT"
+    },
+    {
+      "id": "act_523004249091171",
+      "name": "sittichai1"
+    }
+  ],
+  "mappings": [
+    {
+      "channel_name": "ปริ้นฉลาก",
+      "ad_account_match": "jhi",
+      "campaign_keywords": "ปริ้นฉลาก",
+      "is_fallback": 0,
+      "priority": 10
+    },
+    {
+      "channel_name": "พิมพ์สวยการพิมพ์",
+      "ad_account_match": "STPRINT",
+      "campaign_keywords": "PIMSUAY,พิมพ์สวย",
+      "is_fallback": 0,
+      "priority": 10
+    },
+    {
+      "channel_name": "เพจ ST",
+      "ad_account_match": "STPRINT",
+      "campaign_keywords": "ST",
+      "is_fallback": 1,
+      "priority": 20
+    },
+    {
+      "channel_name": "เพจ โรงงาน25",
+      "ad_account_match": "jhi",
+      "campaign_keywords": "Realโรง,โรงงาน",
+      "is_fallback": 1,
+      "priority": 20
+    },
+    {
+      "channel_name": "เพจ PLP",
+      "ad_account_match": "PLP",
+      "campaign_keywords": "",
+      "is_fallback": 1,
+      "priority": 50
+    },
+    {
+      "channel_name": "เพจ ถูกดีจริง",
+      "ad_account_match": "Love",
+      "campaign_keywords": "",
+      "is_fallback": 1,
+      "priority": 50
+    },
+    {
+      "channel_name": "เพจ ถูกเว้ย25",
+      "ad_account_match": "sittichai1",
+      "campaign_keywords": "",
+      "is_fallback": 1,
+      "priority": 50
+    }
+  ]
+}
