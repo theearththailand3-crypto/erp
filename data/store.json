@@ -1422,8 +1422,8 @@
       "amount": 40041.35,
       "due_date": "2026-11-30",
       "category": "ค่าหมึกพิมพ์/อะไหล่",
-      "paid_amount": 0.0,
-      "status": "creditor",
+      "paid_amount": 40041.35,
+      "status": "paid",
       "payment_method": "โอนเงิน",
       "note": ""
     }
