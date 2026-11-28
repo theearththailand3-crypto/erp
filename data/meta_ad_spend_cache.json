@@ -1,6 +1,6 @@
 {
-  "synced_at": "28/11/2026 15:49",
-  "synced_ts": 1795855776.1685264,
+  "synced_at": "28/11/2026 19:09",
+  "synced_ts": 1795867793.1279843,
   "year": 2026,
   "year_th": 2569,
   "today": "2026-11-28",
@@ -137,7 +137,7 @@
         "h": 3879,
         "l": 2563,
         "c": 2913,
-        "t": 89594,
+        "t": 90156,
         "a": 3258,
         "d": 27,
         "p": true
@@ -249,7 +249,7 @@
         "h": 422,
         "l": 185,
         "c": 335,
-        "t": 9015,
+        "t": 9080,
         "a": 326,
         "d": 27,
         "p": true
@@ -361,7 +361,7 @@
         "h": 1234,
         "l": 776,
         "c": 840,
-        "t": 26694,
+        "t": 26865,
         "a": 972,
         "d": 27,
         "p": true
@@ -428,7 +428,7 @@
         "h": 1157,
         "l": 418,
         "c": 679,
-        "t": 20842,
+        "t": 21069,
         "a": 752,
         "d": 27,
         "p": true
@@ -513,7 +513,7 @@
         "h": 534,
         "l": 315,
         "c": 442,
-        "t": 11905,
+        "t": 11962,
         "a": 431,
         "d": 27,
         "p": true
@@ -620,7 +620,7 @@
         "h": 248,
         "l": 118,
         "c": 192,
-        "t": 4815,
+        "t": 4855,
         "a": 174,
         "d": 27,
         "p": true
@@ -649,7 +649,7 @@
       }
     ]
   },
-  "grand_total": 630405,
+  "grand_total": 630967,
   "live_campaigns": [
     {
       "id": "120239455647850748",
@@ -658,9 +658,9 @@
       "name": "Real_ PLP",
       "status": "ACTIVE",
       "daily_budget": 960.0,
-      "spend_today": 460.07,
-      "msgs_today": 46,
-      "spend_7d": 6891.36,
+      "spend_today": 631.31,
+      "msgs_today": 57,
+      "spend_7d": 6891.59,
       "msgs_7d": 710,
       "cost_per_msg_7d": 9.7
     },
@@ -671,9 +671,9 @@
       "name": "Realถูกดีจริง",
       "status": "ACTIVE",
       "daily_budget": 760.0,
-      "spend_today": 545.23,
-      "msgs_today": 78,
-      "spend_7d": 5510.07,
+      "spend_today": 772.75,
+      "msgs_today": 104,
+      "spend_7d": 5510.14,
       "msgs_7d": 775,
       "cost_per_msg_7d": 7.1
     },
@@ -684,8 +684,8 @@
       "name": "Realโรงงาน",
       "status": "ACTIVE",
       "daily_budget": 474.49,
-      "spend_today": 263.43,
-      "msgs_today": 55,
+      "spend_today": 320.48,
+      "msgs_today": 72,
       "spend_7d": 3446.01,
       "msgs_7d": 644,
       "cost_per_msg_7d": 5.4
@@ -697,7 +697,7 @@
       "name": "Real 25/8/2569 - ถูกเว้ย",
       "status": "ACTIVE",
       "daily_budget": 320.0,
-      "spend_today": 30.58,
+      "spend_today": 31.5,
       "msgs_today": 9,
       "spend_7d": 2564.71,
       "msgs_7d": 457,
@@ -710,8 +710,8 @@
       "name": "STPRINT | Messages | Reel 944054261831560 | ฿200d | 2026-10-26",
       "status": "ACTIVE",
       "daily_budget": 240.0,
-      "spend_today": 109.98,
-      "msgs_today": 8,
+      "spend_today": 156.61,
+      "msgs_today": 13,
       "spend_7d": 1489.04,
       "msgs_7d": 62,
       "cost_per_msg_7d": 24.0
@@ -723,8 +723,8 @@
       "name": "ปริ้นฉลาก8/10/2026",
       "status": "ACTIVE",
       "daily_budget": 204.0,
-      "spend_today": 122.48,
-      "msgs_today": 17,
+      "spend_today": 161.95,
+      "msgs_today": 25,
       "spend_7d": 1246.12,
       "msgs_7d": 166,
       "cost_per_msg_7d": 7.5
@@ -736,7 +736,7 @@
       "name": "Reel",
       "status": "ACTIVE",
       "daily_budget": 144.0,
-      "spend_today": 94.81,
+      "spend_today": 113.28,
       "msgs_today": 3,
       "spend_7d": 909.98,
       "msgs_7d": 33,
@@ -775,11 +775,11 @@
       "active_campaigns": 1,
       "paused_campaigns": 0,
       "active_daily_budget": 960.0,
-      "spend_today": 460.07,
-      "msgs_today": 46,
-      "spend_7d": 6891.36,
+      "spend_today": 631.31,
+      "msgs_today": 57,
+      "spend_7d": 6891.59,
       "msgs_7d": 710,
-      "spend_mtd": 26693.9,
+      "spend_mtd": 26865.37,
       "cost_per_msg_7d": 9.7
     },
     {
@@ -787,11 +787,11 @@
       "active_campaigns": 1,
       "paused_campaigns": 0,
       "active_daily_budget": 760.0,
-      "spend_today": 545.23,
-      "msgs_today": 78,
-      "spend_7d": 5510.07,
+      "spend_today": 772.75,
+      "msgs_today": 104,
+      "spend_7d": 5510.14,
       "msgs_7d": 775,
-      "spend_mtd": 20841.85,
+      "spend_mtd": 21069.44,
       "cost_per_msg_7d": 7.1
     },
     {
@@ -799,11 +799,11 @@
       "active_campaigns": 1,
       "paused_campaigns": 0,
       "active_daily_budget": 474.49,
-      "spend_today": 263.43,
-      "msgs_today": 55,
+      "spend_today": 320.48,
+      "msgs_today": 72,
       "spend_7d": 3446.01,
       "msgs_7d": 644,
-      "spend_mtd": 11905.14,
+      "spend_mtd": 11962.19,
       "cost_per_msg_7d": 5.4
     },
     {
@@ -811,11 +811,11 @@
       "active_campaigns": 2,
       "paused_campaigns": 0,
       "active_daily_budget": 384.0,
-      "spend_today": 204.79,
-      "msgs_today": 11,
+      "spend_today": 269.89,
+      "msgs_today": 16,
       "spend_7d": 2399.02,
       "msgs_7d": 95,
-      "spend_mtd": 9014.98,
+      "spend_mtd": 9080.14,
       "cost_per_msg_7d": 25.3
     },
     {
@@ -823,11 +823,11 @@
       "active_campaigns": 1,
       "paused_campaigns": 1,
       "active_daily_budget": 320.0,
-      "spend_today": 30.58,
+      "spend_today": 31.5,
       "msgs_today": 9,
       "spend_7d": 2907.06,
       "msgs_7d": 465,
-      "spend_mtd": 13360.56,
+      "spend_mtd": 13361.48,
       "cost_per_msg_7d": 6.3
     },
     {
@@ -835,11 +835,11 @@
       "active_campaigns": 1,
       "paused_campaigns": 0,
       "active_daily_budget": 204.0,
-      "spend_today": 122.48,
-      "msgs_today": 17,
+      "spend_today": 161.95,
+      "msgs_today": 25,
       "spend_7d": 1246.12,
       "msgs_7d": 166,
-      "spend_mtd": 4815.24,
+      "spend_mtd": 4854.71,
       "cost_per_msg_7d": 7.5
     },
     {
